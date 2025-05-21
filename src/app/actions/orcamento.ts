@@ -85,7 +85,6 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
       },
     }
   );
-  console.log('orcamento response', response.body.value);
 
   const result: iOrcamento = response.body.value![0];
 
@@ -218,7 +217,6 @@ export async function GetOrcamento(
 
 export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token');
-  const ClienteLocal: string = await getCookie('user');
 
   const cliente: iCliente = (await getClienteAction()).value!;
 

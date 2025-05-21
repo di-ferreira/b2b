@@ -216,8 +216,9 @@ export async function GetNewPriceFromTable(
       Authorization: `bearer ${tokenCookie}`,
     },
   });
+  console.log('produtos', res.body);
 
-  if (res.status !== 200) {
+  if (res.status !== 200 || res.body.Data === null) {
     return {
       value: product.PRECO,
       error: undefined,

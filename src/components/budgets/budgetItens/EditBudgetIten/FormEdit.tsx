@@ -1,10 +1,10 @@
 'use client';
 import { ResponseType } from '@/@types';
 import { iCliente } from '@/@types/Cliente';
-import { iItemInserir, iItensOrcamento, iOrcamento } from '@/@types/Orcamento';
+import { iItemInserir, iItensOrcamento } from '@/@types/Orcamento';
 import { iListaSimilare, iProduto, iSaleHistory } from '@/@types/Produto';
 import { iColumnType, iDataResultTable } from '@/@types/Table';
-import { addItem, GetOrcamento, updateItem } from '@/app/actions/orcamento';
+import { GetOrcamento } from '@/app/actions/orcamento';
 import {
   GetNewPriceFromTable,
   GetProduct,
@@ -22,6 +22,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/use-toast';
 import useModal from '@/hooks/useModal';
 import { FormatToCurrency } from '@/lib/utils';
+import useOrcamento from '@/store/orcamentoStore';
 import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
@@ -30,12 +31,12 @@ import { tableSalesHistoryHeaders } from './columns';
 
 interface iFormEditItem {
   item?: iItensOrcamento;
-  budget: iOrcamento;
   CallBack?: () => void;
-  onCloseModal?: () => void; // Adicione esta linha
+  onCloseModal?: () => void;
 }
 
-const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
+const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
+  const { current, newItem, updateItem } = useOrcamento();
   const { showModal } = useModal();
   const [budgetItem, setBudgetItem] = useState<iItensOrcamento>({
     QTD: 1,
@@ -55,7 +56,6 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     ORCAMENTO: 0,
     PRODUTO: {} as iProduto,
   });
-  const [Budget, setBudget] = useState<iOrcamento>(budget);
   const [productSelected, setProductSelected] = useState<iProduto>(
     {} as iProduto
   );
@@ -81,7 +81,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     let response;
     let message = '';
     const itemSave: iItemInserir = {
-      pIdOrcamento: budget.ORCAMENTO,
+      pIdOrcamento: current.ORCAMENTO,
       pItemOrcamento: {
         CodigoProduto: WordProducts,
         Desconto: 0,
@@ -98,7 +98,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
       // OnCloseModal();
       message = 'Item editado com sucesso';
     } else {
-      response = await addItem(itemSave);
+      response = await newItem(itemSave);
       // OnCloseModal();
       message = 'Item adicionado com sucesso';
     }
@@ -128,10 +128,10 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     let new_price = prod.PRECO;
     let promotionalProduct = await GetProductPromotion(prod);
 
-    let history = await GetSaleHistory(budget.CLIENTE, prod);
+    let history = await GetSaleHistory(current.CLIENTE, prod);
 
     if (promotionalProduct.error !== undefined) {
-      new_price = (await GetNewPriceFromTable(prod, Budget.CLIENTE.Tabela))
+      new_price = (await GetNewPriceFromTable(prod, current.CLIENTE.Tabela))
         .value!;
     }
 
@@ -259,7 +259,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
 
     const new_price = await GetNewPriceFromTable(
       productSelected,
-      Budget.CLIENTE.Tabela
+      current.CLIENTE.Tabela
     );
 
     setBudgetItem((prevBudgetItem) => ({
@@ -300,15 +300,12 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   }
 
   useEffect(() => {
-    // Foco no input ao abrir o modal
     inputProductRef.current?.focus();
 
-    // Carrega o item quando o componente monta ou o 'item' prop muda
     const loadData = async () => {
       try {
-        const res = await GetOrcamento(budget.ORCAMENTO);
+        const res = await GetOrcamento(current.ORCAMENTO);
         if (res.value) {
-          setBudget(res.value);
           LoadItem(res.value.CLIENTE);
         }
       } catch (err: any) {
@@ -323,7 +320,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     return () => {
       // Código de limpeza aqui (se aplicável)
     };
-  }, [budget.ORCAMENTO, item?.PRODUTO.PRODUTO]);
+  }, [current.ORCAMENTO, item?.PRODUTO.PRODUTO]);
 
   const tableSimilaresHeaders: iColumnType<iListaSimilare>[] = [
     {
@@ -411,25 +408,6 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
                     disabled={item !== undefined}
                   />
                 </div>
-                {/* <div className={`flex w-[10%] mb-2`}>
-                <Button
-                  type='button'
-                  onClick={() => {
-                    findProduct();
-                  }}
-                  className={`flex w-9 h-10`}
-                  title='Buscar Produto'
-                  disabled={item !== undefined || loading}
-                >
-                  <FontAwesomeIcon
-                    icon={loading ? faSpinner : faSearch}
-                    spin={loading}
-                    size='xl'
-                    title='Fechar'
-                    className='text-white'
-                  />
-                </Button>
-              </div> */}
               </div>
               <div
                 className={`flex w-[25%] tablet:w-[47%] tablet-portrait:w-[100%]`}

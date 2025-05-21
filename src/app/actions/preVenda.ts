@@ -38,12 +38,12 @@ const SQL_TRANSPORTADORA =
   'SELECT FIRST 1500 F.FORNECEDOR, F.NOME, F.CIDADE FROM FNC F ORDER BY F.NOME';
 
 const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
-  const VendedorLocal: string = await getCookie('user');
+  const ClienteLocal: string = await getCookie('user');
 
-  let ResultFilter: string = `$filter=TIPOMOV eq 'PRE-VENDA'and CANCELADO eq 'N' and VENDEDOR eq ${VendedorLocal}`;
+  let ResultFilter: string = `$filter=TIPOMOV eq 'PRE-VENDA'and CANCELADO eq 'N' and CLIENTE eq ${ClienteLocal}`;
 
   if (filter.filter && filter.filter.length >= 1) {
-    ResultFilter = `$filter=VENDEDOR eq ${VendedorLocal}`;
+    ResultFilter = `$filter=CLIENTE eq ${ClienteLocal}`;
     const andStr = ' AND ';
     filter.filter.map((itemFilter) => {
       if (itemFilter.typeSearch)
@@ -76,12 +76,12 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 };
 
 export async function GetPreVendas(filter: iFilter<iMovimento>) {
-  const VendedorLocal: string = await getCookie('user');
+  const ClienteLocal: string = await getCookie('user');
   const tokenCookie = await getCookie('token');
 
   const FILTER = filter
     ? await CreateFilter(filter)
-    : `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'PRE-VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+    : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'PRE-VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;
@@ -93,6 +93,7 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
       Authorization: `bearer ${tokenCookie}`,
     },
   });
+  console.log('pre venda', response.body);
 
   const result: iDataResultTable<iMovimento> = {
     Qtd_Registros: response.body['@xdata.count'],

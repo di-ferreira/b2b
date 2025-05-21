@@ -1,5 +1,4 @@
 'use client';
-import { iOrcamento } from '@/@types/Orcamento';
 import {
   iCondicaoPgto,
   iFormaPgto,
@@ -13,6 +12,7 @@ import {
   SavePreVenda,
 } from '@/app/actions/preVenda';
 import { cn } from '@/lib/utils';
+import useOrcamento from '@/store/orcamentoStore';
 import {
   faFileInvoiceDollar,
   faTimes,
@@ -22,6 +22,7 @@ import dayjs from 'dayjs';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Suspense, useEffect, useState } from 'react';
+import { Flip, toast } from 'react-toastify';
 import { DataTable } from '../CustomDataTable';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -33,19 +34,16 @@ import {
   SelectItem,
   SelectTrigger,
 } from '../ui/select';
-import { toast } from '../ui/use-toast';
 import { tableHeaders } from './columnsParcelas';
 
-interface iFormEditPreSale {
-  orc: iOrcamento;
-}
 type iFrete = 'ENTREGA' | 'RETIRADA';
 interface iTipoEntrega {
   id: iFrete;
   value: iFrete;
 }
 
-const FormEditPreSale = ({ orc }: iFormEditPreSale) => {
+const FormEditPreSale = () => {
+  const { current } = useOrcamento();
   const router = useRouter();
   const [CondicaoPgto, setCondicaoPgto] = useState<iCondicaoPgto[]>([]);
   const [CondicaoPgtoSelected, setCondicaoPgtoSelected] =
@@ -90,16 +88,16 @@ const FormEditPreSale = ({ orc }: iFormEditPreSale) => {
   const [IsDelivery, setIsDelivery] = useState<boolean>(false);
 
   const [preSale, setPreSale] = useState<iPreVenda>({
-    CodigoCliente: orc.CLIENTE.CLIENTE,
+    CodigoCliente: current.CLIENTE.CLIENTE,
     CodigoCondicaoPagamento: 0,
-    CodigoVendedor1: orc.VENDEDOR.VENDEDOR,
+    CodigoVendedor1: current.VENDEDOR.VENDEDOR,
     DataPedido: dayjs().format('YYYY-MM-DD').toString(),
     ModeloNota: '55',
     Itens: [],
-    SubTotal: orc.TOTAL,
-    Total: orc.TOTAL,
-    ObsPedido1: orc.OBS1 ? orc.OBS1 : '',
-    ObsPedido2: orc.OBS2 ? orc.OBS2 : '',
+    SubTotal: current.TOTAL,
+    Total: current.TOTAL,
+    ObsPedido1: current.OBS1 ? current.OBS1 : '',
+    ObsPedido2: current.OBS2 ? current.OBS2 : '',
     ObsNotaFiscal: '',
     Entrega: 'N',
     NumeroOrdemCompraCliente: '',
@@ -112,14 +110,21 @@ const FormEditPreSale = ({ orc }: iFormEditPreSale) => {
   });
 
   function getCondicao() {
-    if (orc.TOTAL > 0) {
-      GetCondicaoPGTO(orc ? orc.TOTAL : 0, orc.CLIENTE.Tabela).then(
+    if (current.TOTAL > 0) {
+      GetCondicaoPGTO(current ? current.TOTAL : 0, current.CLIENTE.Tabela).then(
         (condicao) => {
           if (condicao.value === null) {
-            toast({
-              title: 'Error!',
-              description: 'não a condições para o total do orçamento!',
-              variant: 'destructive',
+            toast('não há condições para o total do orçamento!', {
+              position: 'bottom-right',
+              autoClose: 5000,
+              hideProgressBar: false,
+              closeOnClick: false,
+              pauseOnHover: true,
+              draggable: true,
+              progress: undefined,
+              theme: 'colored',
+              type: 'error',
+              transition: Flip,
             });
           }
           if (condicao.value) {
@@ -164,17 +169,17 @@ const FormEditPreSale = ({ orc }: iFormEditPreSale) => {
   function GerarPV() {
     const ItensPV: iItemPreVenda[] = [];
 
-    for (const item in orc.ItensOrcamento) {
+    for (const item in current.ItensOrcamento) {
       ItensPV.push({
-        CodigoProduto: orc.ItensOrcamento[item].PRODUTO.PRODUTO,
-        Qtd: orc.ItensOrcamento[item].QTD,
-        Desconto: orc.ItensOrcamento[item].DESCONTO
-          ? orc.ItensOrcamento[item].DESCONTO
+        CodigoProduto: current.ItensOrcamento[item].PRODUTO.PRODUTO,
+        Qtd: current.ItensOrcamento[item].QTD,
+        Desconto: current.ItensOrcamento[item].DESCONTO
+          ? current.ItensOrcamento[item].DESCONTO
           : 0,
-        SubTotal: orc.ItensOrcamento[item].SUBTOTAL,
-        Tabela: orc.ItensOrcamento[item].TABELA,
-        Valor: orc.ItensOrcamento[item].VALOR,
-        Total: orc.ItensOrcamento[item].TOTAL,
+        SubTotal: current.ItensOrcamento[item].SUBTOTAL,
+        Tabela: current.ItensOrcamento[item].TABELA,
+        Valor: current.ItensOrcamento[item].VALOR,
+        Total: current.ItensOrcamento[item].TOTAL,
         Frete: 0,
       });
     }
@@ -189,25 +194,46 @@ const FormEditPreSale = ({ orc }: iFormEditPreSale) => {
     SavePreVenda(PV)
       .then((res) => {
         if (res.value) {
-          toast({
-            title: 'Sucesso!',
-            description: 'Pré-venda gerada com sucesso',
-            variant: 'success',
+          toast('Pré-venda gerada com sucesso', {
+            position: 'bottom-right',
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: 'colored',
+            type: 'success',
+            transition: Flip,
           });
         }
         if (res.error) {
-          toast({
-            title: 'Error!',
-            description: res.error.message,
-            variant: 'destructive',
+          toast(res.error.message, {
+            position: 'bottom-right',
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: 'colored',
+            type: 'error',
+            transition: Flip,
           });
         }
       })
       .catch((e) => {
-        toast({
-          title: 'Error!',
-          description: e.message,
-          variant: 'destructive',
+        toast(e.message, {
+          position: 'bottom-right',
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: false,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: 'colored',
+          type: 'error',
+          transition: Flip,
         });
       })
       .finally(() => {

@@ -4,6 +4,7 @@ import {
   getLastVenda,
   getVendasDashboard,
 } from '@/app/actions/vendas';
+import BannerCarousel from '@/components/BannerCarousel';
 import {
   Card,
   CardContent,
@@ -59,18 +60,18 @@ const Dashboard = async () => {
           className={`w-full h-[200px] p-3 tablet-landscape:flex tablet-landscape:items-center tablet-landscape:justify-evenly
                       tablet-portrait:flex tablet-portrait:items-center tablet-portrait:justify-evenly`}
         >
-          <div>
+          {/* <div>
             <CardHeader className='text-lg text-gray-600 p-0 flex-row items-center gap-x-3'>
               Número Total de Vendas <FontAwesomeIcon icon={faDollarSign} />
             </CardHeader>
             <CardDescription className='text-xs text-gray-500'>
               Quantidade Total de vendas do mês
             </CardDescription>
-          </div>
+          </div> */}
           <CardContent
-            className={`font-bold mt-2 tablet-landscape:text-2xl tablet-landscape:mt-5`}
+            className={`font-bold tablet-landscape:text-2xl tablet-landscape:mt-5 p-0 mt-0`}
           >
-            {listaVendas ? listaVendas.length : 0}
+            <BannerCarousel />
           </CardContent>
         </Card>
       </section>

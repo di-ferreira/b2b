@@ -37,3 +37,6 @@ yarn-error.log*
 next-env.d.ts
 yarn.lock
 dist
+public/banners/01.png
+public/banners/02.png
+public/banners/03.webp

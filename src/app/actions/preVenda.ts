@@ -2,6 +2,7 @@
 
 import { iApiResult } from '@/@types';
 import { iFilter } from '@/@types/Filter';
+import { iMovimentoEventos } from '@/@types/MovimentosEventos';
 import {
   iCondicaoPgto,
   iFormaPgto,
@@ -11,8 +12,10 @@ import {
 } from '@/@types/PreVenda';
 import { iDataResultTable } from '@/@types/Table';
 import { CustomFetch } from '@/services/api';
+import dayjs from 'dayjs';
 import { getCookie } from '.';
 const ROUTE_GET_ALL_PRE_VENDA = '/Movimento';
+const ROUTE_GET_ALL_MOVIMENTOS_EVENTOS = '/MovimentoEventos';
 const ROUTE_SAVE_PRE_VENDA = '/ServiceVendas/NovaPreVenda';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const SQL_CONDICAO_PGTO = `SELECT O.id, O.nome, O.parcelas, O.valor_parcela, O.valor_parcela*O.PARCELAS AS VALOR_MINIMO,
@@ -96,6 +99,46 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
   console.log('pre venda', response.body);
 
   const result: iDataResultTable<iMovimento> = {
+    Qtd_Registros: response.body['@xdata.count'],
+    value: response.body.value,
+  };
+
+  if (response.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.status),
+        message: String(response.statusText),
+      },
+    };
+  }
+  return {
+    value: result,
+    error: undefined,
+  };
+}
+
+export async function GetMovimentosDashboard() {
+  const ClienteLocal: string = await getCookie('user');
+  const tokenCookie = await getCookie('token');
+
+  const FILTER = `?$filter=MOVIMENTO/CLIENTE eq ${ClienteLocal} and MOVIMENTO/TIPOMOV eq 'PRE-VENDA' and MOVIMENTO/CANCELADO eq 'N' and MOVIMENTO/DATA ge ${String(
+    dayjs().subtract(3, 'months').format('YYYY-MM-DD')
+  )}&$inlinecount=allpages&$orderby=MOVIMENTO/MOVIMENTO desc&$expand=MOVIMENTO, MOVIMENTO/Itens_List, MOVIMENTO/CLIENTE `;
+
+  const response = await CustomFetch<{
+    '@xdata.count': number;
+    value: iMovimentoEventos[];
+  }>(`${ROUTE_GET_ALL_MOVIMENTOS_EVENTOS}${FILTER}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `bearer ${tokenCookie}`,
+    },
+  });
+  console.log('pre venda', response.body);
+
+  const result: iDataResultTable<iMovimentoEventos> = {
     Qtd_Registros: response.body['@xdata.count'],
     value: response.body.value,
   };

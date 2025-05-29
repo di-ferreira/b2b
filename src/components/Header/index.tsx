@@ -9,7 +9,7 @@ const Header = () => {
     <header className='flex w-full px-6 py-3 items-center justify-between shadow-lg bg-emsoft_blue-main'>
       <Image src={LogoBranca} className='h-[5vh] w-auto' alt='Logo AutoSul' />
       <section className='flex px-1'>
-        <Suspense fallback={<span>Carregando nome do vendedor...</span>}>
+        <Suspense fallback={<span>Carregando nome do cliente...</span>}>
           <UserNameText />
         </Suspense>
         <ButtonSingOut />

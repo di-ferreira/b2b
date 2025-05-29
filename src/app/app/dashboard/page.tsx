@@ -7,7 +7,10 @@ import {
   CardFooter,
   CardHeader,
 } from '@/components/ui/card';
-import { faDollarSign } from '@fortawesome/free-solid-svg-icons';
+import {
+  faDollarSign,
+  faFileInvoiceDollar,
+} from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 const Dashboard = async () => {
@@ -36,10 +39,10 @@ const Dashboard = async () => {
           className={`w-[50%] h-min p-3 tablet:w-full tablet:flex tablet:flex-col tablet:items-center`}
         >
           <CardHeader className='text-lg text-gray-600 p-0 flex-row items-center gap-x-3'>
-            Gráfico de venda Mensal <FontAwesomeIcon icon={faDollarSign} />
+            Boletos em aberto <FontAwesomeIcon icon={faFileInvoiceDollar} />
           </CardHeader>
           <CardDescription className='text-xs text-gray-500'>
-            Gráfico de vendas do vendedor do mês
+            Boletos de pedidos anteriores
           </CardDescription>
 
           <CardContent className='font-bold mt-2 p-0 w-full'>

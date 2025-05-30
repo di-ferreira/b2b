@@ -1,4 +1,3 @@
-import { GetOrcamento } from '@/app/actions/orcamento';
 import FormEditPreSale from '@/components/preSale/FormEditPreSale';
 
 interface ipreSalePage {
@@ -6,11 +5,7 @@ interface ipreSalePage {
 }
 
 const PreSale = async ({ params }: ipreSalePage) => {
-  const orcamento = await GetOrcamento(params.id);
-
-  if (!orcamento.value) return <p>Failed to load Pre-Sale.</p>;
-
-  return <FormEditPreSale orc={orcamento.value} />;
+  return <FormEditPreSale />;
 };
 
 export default PreSale;

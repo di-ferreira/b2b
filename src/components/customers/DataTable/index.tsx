@@ -145,10 +145,7 @@ function DataTableCustomer() {
           onClick={() => {
             let orcID = 0;
             setIconLoading(true);
-            NewOrcamento({
-              ...NewAddOrcamento,
-              CLIENTE: item,
-            })
+            NewOrcamento()
               .then((res) => {
                 if (res.value !== undefined) {
                   orcID = res.value.ORCAMENTO;

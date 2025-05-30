@@ -1,6 +1,6 @@
 'use server';
 
-import { iSelectSQL, iVendedor, ResponseType } from '@/@types';
+import { iSelectSQL, ResponseType } from '@/@types';
 import { iCliente } from '@/@types/Cliente';
 import { iFilter } from '@/@types/Filter';
 import { iDataResultTable } from '@/@types/Table';
@@ -77,7 +77,7 @@ where R.CONTA in ('R', 'C') and
 
 async function CreateFilter(filter: iFilter<iCliente>): Promise<string> {
   const VendedorLocal: string = await getCookie('user');
-  const vendedor: iVendedor = (await getClienteAction()).value!;
+  const cliente: iCliente = (await getClienteAction()).value!;
   const andStr = ' AND ';
 
   let vendedorFilter: string = `VENDEDOR eq ${VendedorLocal}`;
@@ -110,16 +110,6 @@ async function CreateFilter(filter: iFilter<iCliente>): Promise<string> {
   ResultFilter !== '' && (ResultTop = `&${ResultTop}`);
 
   let ResultRoute: string = `?${ResultFilter}${ResultTop}${ResultSkip}${ResultOrderBy}&$inlinecount=allpages`;
-
-  if (vendedor.TIPO_VENDEDOR === 'I') {
-    if (filter.filter === undefined) {
-      ResultRoute = ResultRoute.replace(ResultFilter + '&', '');
-    }
-
-    ResultRoute = ResultRoute.replace(vendedorFilter, '');
-    ResultRoute = ResultRoute.replace(andStr, '');
-    // ResultRoute = ResultRoute.replace(' ', '');
-  }
 
   return ResultRoute;
 }

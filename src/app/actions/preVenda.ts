@@ -96,7 +96,6 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
       Authorization: `bearer ${tokenCookie}`,
     },
   });
-  console.log('pre venda', response.body);
 
   const result: iDataResultTable<iMovimento> = {
     Qtd_Registros: response.body['@xdata.count'],
@@ -136,7 +135,6 @@ export async function GetMovimentosDashboard() {
       Authorization: `bearer ${tokenCookie}`,
     },
   });
-  console.log('pre venda', response.body);
 
   const result: iDataResultTable<iMovimentoEventos> = {
     Qtd_Registros: response.body['@xdata.count'],

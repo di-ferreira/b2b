@@ -1,7 +1,13 @@
+export type tTypeSearch = 'eq' | 'ne' | 'like' | 'gt' | 'lt' | 'ge' | 'le';
+
+export type tTypeCondition = 'and' | 'or';
+export type tGroupOperator = tTypeCondition;
 export interface iFilterQuery<T> {
   key: keyof T;
-  value: string | number;
-  typeSearch?: 'eq' | 'like';
+  value: string | number | null;
+  typeSearch?: tTypeSearch;
+  typeCondition?: tTypeCondition;
+  groupOperator?: tGroupOperator;
 }
 
 export interface iFilter<T> {
@@ -10,3 +16,4 @@ export interface iFilter<T> {
   top?: number;
   skip?: number;
 }
+

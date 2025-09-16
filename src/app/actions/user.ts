@@ -121,6 +121,7 @@ export async function LoginUser(
   await setCookie('token', token);
 
   await setCookie('user', String(cliente.value.CLIENTE));
+  await setCookie('CIC', String(cliente.value.CIC));
 
   return { value: clienteResult.value };
 }

@@ -1,3 +1,5 @@
+import { iCliente } from './Cliente';
+
 export interface iContas {
   $id: number;
   CONTA: string;
@@ -60,7 +62,7 @@ export interface iContas {
   CONCILIADO_NEXERA: any;
   LOTE: any;
   ID_Lote_Pgto: any;
-  'CLIENTE@xdata.proxy': string;
+  CLIENTE: iCliente;
   'FORNECEDOR@xdata.proxy': string;
   IDCartaoVenda: any;
   IDCartaoPgto: any;

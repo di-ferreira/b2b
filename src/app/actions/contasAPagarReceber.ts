@@ -116,7 +116,7 @@ async function CreateQueryParams(filter: iFilter<iContas>): Promise<string> {
     : '&$orderby=VENCIMENTO desc';
 
   // 6. Monta URL final
-  return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}&$inlinecount=allpages`;
+  return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}&$expand=CLIENTE&$inlinecount=allpages`;
   // return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}&$expand=VENDEDOR,CLIENTE,ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento,ItensOrcamento/PRODUTO&$inlinecount=allpages`;
 }
 
@@ -191,8 +191,6 @@ export async function GetContasAPagarFromCliente(
           'DD'
         )}&$orderby=ORCAMENTO desc&$top=10&$expand=VENDEDOR,CLIENTE,ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento,ItensOrcamento/PRODUTO&$inlinecount=allpages`;
 
-  console.log('FILTER: ', FILTER);
-
   const response = await CustomFetch<{
     '@xdata.count': number;
     value: iContas[];
@@ -228,9 +226,7 @@ export async function GetContasDashboard() {
   const Cliente: string = await getCookie('user');
   const tokenCookie = await getCookie('token');
 
-  const FILTER = `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1&$orderby=VENCIMENTO desc&$inlinecount=allpages`;
-
-  console.log('FILTER: ', FILTER);
+  const FILTER = `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1&$expand=CLIENTE&$orderby=VENCIMENTO desc&$inlinecount=allpages`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;
@@ -242,7 +238,6 @@ export async function GetContasDashboard() {
       Authorization: `bearer ${tokenCookie}`,
     },
   });
-  console.log('response: ', response);
 
   const result: iDataResultTable<iContas> = {
     Qtd_Registros: response.body['@xdata.count'],

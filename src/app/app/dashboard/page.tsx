@@ -1,4 +1,5 @@
 import BannerCarousel from '@/components/BannerCarousel';
+import DataTableBankSlip from '@/components/Dashboard/boletos/table';
 import DataTableSaleAwaiting from '@/components/Dashboard/pre-sale/table';
 import {
   Card,
@@ -45,8 +46,8 @@ const Dashboard = async () => {
             Boletos de pedidos anteriores
           </CardDescription>
 
-          <CardContent className='font-bold mt-2 p-0 w-full'>
-            {/* <LineChart series={singleSeries} categories={categories} /> */}
+          <CardContent className='font-bold mt-2 px-2 py-4 w-full'>
+            <DataTableBankSlip />
           </CardContent>
           <CardFooter></CardFooter>
         </Card>

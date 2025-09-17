@@ -48,7 +48,7 @@ export const headers: iColumnType<iContas>[] = [
         <span className='w-full h-full flex justify-center items-center'>
           <Link
             className='w-full h-8 flex items-center justify-center text-emsoft_light-main rounded-sm  bg-emsoft_orange-main hover:bg-emsoft_orange-light  tablet-portrait:h-14 tablet-portrait:text-2xl'
-            href={`/api/download/${banco}/Boleto_${item.CLIENTE.CIC}_${item.NOSSO_NUMERO}.pdf`}
+            href={`/api/download/Boleto_${item.CLIENTE.CIC}_${item.NOSSO_NUMERO}.pdf`}
             download={`Boleto_${item.CLIENTE.CIC}_${item.NOSSO_NUMERO}.pdf`}
             target='_top'
           >

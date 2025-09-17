@@ -19,7 +19,7 @@ export interface iContas {
   CANCELADO: string;
   TRANSFORMACAO: any;
   COM_NOTA: any;
-  EMISSAO_BOLETO: any;
+  EMISSAO_BOLETO: string;
   DATA_BOLETO: any;
   HISTORICO2: any;
   CLI_CHQ: any;

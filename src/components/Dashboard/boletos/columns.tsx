@@ -43,7 +43,7 @@ export const headers: iColumnType<iContas>[] = [
       if (banco === 'CAIXA ECONOMICA') {
         banco = 'caixa';
       }
-      banco = banco.toLocaleLowerCase().trim();
+      banco = banco.toLocaleLowerCase().trim().replaceAll(' ', '');
       return (
         <span className='w-full h-full flex justify-center items-center'>
           <Link

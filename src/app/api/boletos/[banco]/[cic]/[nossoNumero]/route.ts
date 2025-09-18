@@ -102,6 +102,8 @@ export async function GET(
 
     for (const folder of possibleFolders) {
       const filePath = path.join(PDFS_DIR, folder, fileName);
+      console.log('filePath: ', filePath);
+
       if (fs.existsSync(filePath)) {
         fileBuffer = fs.readFileSync(filePath);
         foundFileName = fileName;

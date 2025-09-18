@@ -109,6 +109,9 @@ export async function GET(
         foundFileName = fileName;
         break;
       }
+
+      console.log('foundFileName: ', foundFileName);
+      console.log('fileBuffer: ', fileBuffer);
     }
 
     if (!fileBuffer || !foundFileName) {

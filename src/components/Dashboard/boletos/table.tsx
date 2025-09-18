@@ -2,15 +2,16 @@
 import { ResponseType } from '@/@types';
 import { iContas } from '@/@types/Contas';
 import { iFilter } from '@/@types/Filter';
-import { iDataResultTable } from '@/@types/Table';
+import { iColumnType, iDataResultTable } from '@/@types/Table';
 import { GetContasDashboard } from '@/app/actions/contasAPagarReceber';
 import { DataTable } from '@/components/CustomDataTable';
 import ErrorMessage from '@/components/ErrorMessage';
 import { Loading } from '@/components/Loading';
 import { KEY_NAME_TABLE_PAGINATION } from '@/constants';
 import { removeStorage } from '@/lib/utils';
+import dayjs from 'dayjs';
 import { Suspense, useCallback, useEffect, useState } from 'react';
-import { headers } from './columns';
+import ButtonBoleto from './ButtonBoleto';
 
 function DataTableBankSlip() {
   const [data, setData] = useState<ResponseType<iDataResultTable<iContas>>>({});
@@ -35,6 +36,50 @@ function DataTableBankSlip() {
     removeStorage(KEY_NAME_TABLE_PAGINATION);
     handleBudgets({ top: 10 });
   }, []);
+
+  const headers: iColumnType<iContas>[] = [
+    {
+      key: 'DATA',
+      title: 'DATA',
+      width: '20rem',
+      render: (_, item) => {
+        return dayjs(item.Data).format('DD/MM/YYYY');
+      },
+    },
+    {
+      key: 'DOC',
+      title: 'DOC',
+      width: '5rem',
+      render: (_, item) => {
+        return item.Doc;
+      },
+    },
+    {
+      key: 'TOTAL',
+      title: 'TOTAL',
+      width: '7rem',
+      render: (_, item) => {
+        return item.TOTAL.toLocaleString('pt-br', {
+          style: 'currency',
+          currency: 'BRL',
+        });
+      },
+    },
+    {
+      key: '',
+      title: 'BOLETO',
+      width: '20rem',
+      render: (_, item) => {
+        let banco: string = item.EMISSAO_BOLETO || '';
+        console.log('banco: ', banco);
+        if (banco === 'CAIXA ECONOMICA') {
+          banco = 'caixa';
+        }
+        banco = banco.toLocaleLowerCase().trim().replaceAll(' ', '');
+        return <ButtonBoleto conta={item} />;
+      },
+    },
+  ];
 
   if (data.error !== undefined) {
     return (

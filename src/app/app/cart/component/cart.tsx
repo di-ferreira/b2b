@@ -1,5 +1,5 @@
 'use client';
-import { Response } from '@/@types';
+import { iUniqueResult } from '@/@types';
 import { iOrcamento } from '@/@types/Orcamento';
 import DataTableItensBudget from '@/components/budgets/budgetItens/DataTable';
 import { Input } from '@/components/ui/input';
@@ -10,13 +10,11 @@ import dayjs from 'dayjs';
 import Link from 'next/link';
 import { useEffect } from 'react';
 
-export default function Cart({ value }: Response<iOrcamento>) {
+export default function Cart({ data }: iUniqueResult<iOrcamento>) {
   const { current, setCurrent } = useOrcamento();
 
   useEffect(() => {
-    console.log('cart', value);
-
-    setCurrent(value!);
+    setCurrent(data!);
     return () => {};
   }, []);
 
@@ -36,7 +34,7 @@ export default function Cart({ value }: Response<iOrcamento>) {
             labelText='Nº do Orcamento'
             labelPosition='top'
             value={current.ORCAMENTO}
-            className='w-[10%] h-7'
+            className='w-[11%] h-7'
             inputClass=' text-right'
             disabled
           />
@@ -44,12 +42,12 @@ export default function Cart({ value }: Response<iOrcamento>) {
             labelText='Data'
             labelPosition='top'
             value={dayjs(current.DATA).format('DD/MM/YYYY')}
-            className='w-[10%] h-7'
+            className='w-[11%] h-7'
             inputClass=' text-right'
             disabled
           />
           <Input
-            labelText='Total do Orçamento'
+            labelText='Total'
             labelPosition='top'
             value={
               current.TOTAL
@@ -59,7 +57,7 @@ export default function Cart({ value }: Response<iOrcamento>) {
                   })
                 : 'R$ 0,00'
             }
-            className='w-[10%] h-7'
+            className='w-[11%] h-7'
             inputClass=' text-right'
             disabled
           />

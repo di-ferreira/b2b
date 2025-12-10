@@ -9,10 +9,10 @@ const UserNameText = () => {
     getClienteAction
   );
 
-  if (isLoading) return <span>Carregando nome do vendedor...</span>;
+  if (isLoading) return <span>Carregando nome do cliente...</span>;
 
   if (user === undefined)
-    console.error('Error:Falha ao carregar nome do vendedor.');
+    console.error('Error:Falha ao carregar nome do cliente.');
 
   if (user === undefined || user.value === undefined)
     return <span>Failed to load user.</span>;

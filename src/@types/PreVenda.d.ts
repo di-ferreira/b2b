@@ -239,8 +239,8 @@ export interface iPreVenda {
   PedidoEcommerce?: string;
   ModeloNota: string;
   NumeroOrdemCompraCliente: string;
-  Entrega: string;
-  TipoEntrega?: string;
+  Entrega: 'S' | 'N';
+  TipoEntrega?: 'VEM BUSCAR' | 'CARRO';
   Origem?: string;
   Itens: iItemPreVenda[];
 }

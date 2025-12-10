@@ -11,6 +11,7 @@ export interface iModalRender extends iModalStyle {
   bodyHeight?: string;
   bodyWidth?: string;
   containerStyle?: string;
+  titleStyle?: string;
 }
 export interface iModal extends iModalStyle {
   Title: string;
@@ -19,6 +20,7 @@ export interface iModal extends iModalStyle {
   bodyHeight?: string;
   bodyWidth?: string;
   containerStyle?: string;
+  titleStyle?: string;
   xs?: iModalStyle;
   sm?: iModalStyle;
   md?: iModalStyle;

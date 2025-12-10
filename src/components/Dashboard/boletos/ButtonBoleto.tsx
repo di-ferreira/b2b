@@ -13,6 +13,7 @@ export default async function ButtonBoleto(conta: { conta: iContas }) {
     banco = banco.toLocaleLowerCase().trim().replaceAll(' ', '');
 
     const url = `/api/boletos/${banco}/${conta.conta.CLIENTE.CIC}/${conta.conta.NOSSO_NUMERO}`;
+    console.log('url: ', url);
 
     const response = await fetch(url);
 

@@ -156,3 +156,13 @@ export interface iCliente {
   PendenciasList: iPendenciasList[];
 }
 
+export interface iPgtoEmAberto {
+  VENCIMENTO: string;
+  DATA: string;
+  TIPO: string;
+  HISTORICO: string;
+  ATRASO: number;
+  RESTA: number;
+  DOC: string;
+  EMISSAO_BOLETO: string;
+}

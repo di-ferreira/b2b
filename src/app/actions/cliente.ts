@@ -1,14 +1,13 @@
 'use server';
 
-import { iSelectSQL, ResponseType } from '@/@types';
-import { iCliente } from '@/@types/Cliente';
+import { iSelectSQL, ResponseSQL, ResponseType } from '@/@types';
+import { iCliente, iPgtoEmAberto } from '@/@types/Cliente';
 import { iFilter } from '@/@types/Filter';
 import { iDataResultTable } from '@/@types/Table';
 import { CustomFetch } from '@/services/api';
 import dayjs from 'dayjs';
 import { getCookie } from '.';
 import { getClienteAction } from './user';
-
 interface iCustomersDebit {
   NOME_CLIENTE: string;
   VALOR: number;
@@ -76,7 +75,7 @@ where R.CONTA in ('R', 'C') and
       order by 2 desc`;
 
 async function CreateFilter(filter: iFilter<iCliente>): Promise<string> {
-  const VendedorLocal: string = await getCookie('user');
+  const VendedorLocal: string = await getCookie('user_b2b');
   const cliente: iCliente = (await getClienteAction()).value!;
   const andStr = ' AND ';
 
@@ -117,8 +116,8 @@ async function CreateFilter(filter: iFilter<iCliente>): Promise<string> {
 export async function GetClienteFromVendedor(
   filter: iFilter<iCliente> | null | undefined
 ): Promise<ResponseType<iDataResultTable<iCliente>>> {
-  const VendedorLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const VendedorLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateFilter(filter)
@@ -158,7 +157,7 @@ export async function GetClienteFromVendedor(
 export async function GetCliente(
   customerCode: string | number
 ): Promise<ResponseType<iCliente>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iCliente>(
     `${ROUTE_CLIENTE}(${customerCode})?$expand=Telefones, AgendamentosList, PendenciasList`,
@@ -190,7 +189,7 @@ export async function GetCliente(
 }
 
 export async function GetPGTOsAtrazados(cliente: number) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const body: string = JSON.stringify({
     pSQL: SQL_PGTO_ATRAZO,
@@ -234,7 +233,7 @@ export async function GetPGTOsAtrazados(cliente: number) {
 }
 
 export async function GetPGTOsNaoVencidos(cliente: number) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const body: string = JSON.stringify({
     pSQL: SQL_PGTO_NAO_VENCIDAS,
@@ -278,7 +277,7 @@ export async function GetPGTOsNaoVencidos(cliente: number) {
 }
 
 export async function GetPGTOsEmAberto(cliente: number) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const body: string = JSON.stringify({
     pSQL: SQL_CONTAS_ABERTAS,
@@ -291,14 +290,17 @@ export async function GetPGTOsEmAberto(cliente: number) {
     ],
   } as iSelectSQL);
 
-  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
-    method: 'POST',
-    body: body,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `bearer ${tokenCookie}`,
-    },
-  });
+  const response = await CustomFetch<ResponseSQL<iPgtoEmAberto[]>>(
+    `${ROUTE_SELECT_SQL}`,
+    {
+      method: 'POST',
+      body: body,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    }
+  );
 
   if (response.status !== 200) {
     return {
@@ -311,14 +313,14 @@ export async function GetPGTOsEmAberto(cliente: number) {
   }
 
   return {
-    value: response.body,
+    value: response.body!.Data,
     error: undefined,
   };
 }
 
 export async function GetClientesPgtoEmAberto() {
-  const tokenCookie = await getCookie('token');
-  const VendedorLocal: string = await getCookie('user');
+  const tokenCookie = await getCookie('token_b2b');
+  const VendedorLocal: string = await getCookie('user_b2b');
 
   const body: string = JSON.stringify({
     pSQL: SQL_CLIENTES_EM_ABERTO,

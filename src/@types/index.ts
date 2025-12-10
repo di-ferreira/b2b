@@ -16,7 +16,7 @@ export interface iApiResult<T> {
 export interface iResultApi<T> {
   status: number;
   statusText: string;
-  body: { value: T[] };
+  value: T[];
 }
 
 export interface iUniqueResult<T> {
@@ -115,10 +115,6 @@ export type userLogin = {
   password: string;
 };
 
-export type Response<T> = {
-  value?: T;
-};
-
 export type ResponseType<T> = {
   value?: T;
   error?: ResponseError;
@@ -128,4 +124,11 @@ export type ResponseError = {
   code: string;
   message: string;
 };
+
+export interface ResponseSQL<T> {
+  StatusCode: number;
+  StatusMessage: string;
+  RecordCount: number;
+  Data: T;
+}
 

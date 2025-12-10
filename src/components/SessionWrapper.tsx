@@ -11,7 +11,7 @@ interface Props {
 }
 
 const SessionWrapper = ({ children, classname }: Props) => {
-  const tokenCookie = getCookie('token', { cookies });
+  const tokenCookie = getCookie('token_b2b', { cookies });
 
   if (tokenCookie === undefined) {
     redirect('/auth');

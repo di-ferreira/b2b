@@ -14,10 +14,10 @@ export async function LoginUser(
     return { error: resultVenda.error };
   }
 
-  const token = resultVenda.value;
+  const token_b2b = resultVenda.value;
 
   const cliente: ResponseType<iCliente> = await getCliente({
-    token,
+    token_b2b,
     user: user.cliente,
   });
 
@@ -118,9 +118,9 @@ export async function LoginUser(
       REGIAO: {} as iRegiao,
     },
   };
-  await setCookie('token', token);
+  await setCookie('token_b2b', token_b2b);
 
-  await setCookie('user', String(cliente.value.CLIENTE));
+  await setCookie('user_b2b', String(cliente.value.CLIENTE));
   await setCookie('CIC', String(cliente.value.CIC));
 
   return { value: clienteResult.value };
@@ -143,7 +143,7 @@ async function vendaLogin(): Promise<ResponseType<string>> {
 }
 
 async function getCliente(data: {
-  token: string;
+  token_b2b: string;
   user: string;
 }): Promise<ResponseType<iCliente>> {
   const responseData = await CustomFetch<{
@@ -158,7 +158,7 @@ async function getCliente(data: {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `bearer ${data.token}`,
+        Authorization: `bearer ${data.token_b2b}`,
       },
     }
   );
@@ -179,8 +179,8 @@ async function getCliente(data: {
 }
 
 export async function getClienteAction(): Promise<ResponseType<iCliente>> {
-  const tokenCookie = await getCookie('token');
-  const userCookie = await getCookie('user');
+  const tokenCookie = await getCookie('token_b2b');
+  const userCookie = await getCookie('user_b2b');
 
   const responseData = await CustomFetch(`/Clientes(${userCookie})`, {
     method: 'GET',

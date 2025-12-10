@@ -11,7 +11,7 @@ const ROUTE_GET_ALL_PRE_VENDA = '/Movimento';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 
 const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
-  const VendedorLocal: string = await getCookie('user');
+  const VendedorLocal: string = await getCookie('user_b2b');
 
   let ResultFilter: string = `$filter=TIPOMOV eq 'VENDA'and CANCELADO eq 'N' and VENDEDOR eq ${VendedorLocal}`;
 
@@ -51,8 +51,8 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 };
 
 export async function GetVendas(filter: iFilter<iMovimento>) {
-  const VendedorLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const VendedorLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateFilter(filter)
@@ -91,8 +91,8 @@ export async function GetVendas(filter: iFilter<iMovimento>) {
 }
 
 export async function getVendasDashboard() {
-  const VendedorLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const VendedorLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const sql: string = `SELECT
     c.NOME AS CLIENTE,
@@ -142,8 +142,8 @@ ORDER BY
 }
 
 export async function getDataTotalVenda() {
-  const VendedorLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const VendedorLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const sql: string = `SELECT 
     EXTRACT(YEAR FROM data) AS ano,
@@ -190,8 +190,8 @@ ORDER BY
   };
 }
 export async function getLastVenda() {
-  const VendedorLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const VendedorLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=1&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
 

@@ -4,7 +4,7 @@ export const fetchClient = async (
   input: string | URL | Request,
   init?: RequestInit | undefined
 ): Promise<Response> => {
-  const jwt = cookies().get('token');
+  const jwt = cookies().get('token_b2b');
   const URL = `${process.env.EMSOFT_API}${input}`;
 
   const response = await fetch(URL, {

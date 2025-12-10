@@ -8,8 +8,8 @@ import { Button } from '../button';
 const ButtonSingOut = () => {
   const route = useRouter();
   async function logOut() {
-    await removeCookie('token');
-    await removeCookie('user');
+    await removeCookie('token_b2b');
+    await removeCookie('user_b2b');
     route.replace('/auth');
   }
 

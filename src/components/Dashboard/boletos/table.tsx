@@ -24,9 +24,7 @@ function DataTableBankSlip() {
         setData(res);
         setLoading(false);
       })
-      .catch((err) => {
-        console.error('Erro ao carregar Contas:', err);
-      })
+      .catch((err) => {})
       .finally(() => {
         setLoading(false);
       });
@@ -71,7 +69,7 @@ function DataTableBankSlip() {
       width: '20rem',
       render: (_, item) => {
         let banco: string = item.EMISSAO_BOLETO || '';
-        console.log('banco: ', banco);
+
         if (banco === 'CAIXA ECONOMICA') {
           banco = 'caixa';
         }

@@ -41,7 +41,7 @@ const SQL_TRANSPORTADORA =
   'SELECT FIRST 1500 F.FORNECEDOR, F.NOME, F.CIDADE FROM FNC F ORDER BY F.NOME';
 
 const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
-  const ClienteLocal: string = await getCookie('user');
+  const ClienteLocal: string = await getCookie('user_b2b');
 
   let ResultFilter: string = `$filter=TIPOMOV eq 'PRE-VENDA'and CANCELADO eq 'N' and CLIENTE eq ${ClienteLocal}`;
 
@@ -79,8 +79,8 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 };
 
 export async function GetPreVendas(filter: iFilter<iMovimento>) {
-  const ClienteLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const ClienteLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateFilter(filter)
@@ -118,8 +118,8 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
 }
 
 export async function GetMovimentosDashboard() {
-  const ClienteLocal: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const ClienteLocal: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = `?$filter=MOVIMENTO/CLIENTE eq ${ClienteLocal} and MOVIMENTO/TIPOMOV eq 'PRE-VENDA' and MOVIMENTO/CANCELADO eq 'N' and MOVIMENTO/DATA ge ${String(
     dayjs().subtract(3, 'months').format('YYYY-MM-DD')
@@ -157,7 +157,7 @@ export async function GetMovimentosDashboard() {
 }
 
 export async function GetPreVenda(IdPV: number) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iMovimento>(
     `${ROUTE_GET_ALL_PRE_VENDA}(${IdPV})?$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`,
@@ -187,7 +187,7 @@ export async function GetPreVenda(IdPV: number) {
 }
 
 export async function GetFormasPGTO() {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iFormaPgto[]>>(
     ROUTE_SELECT_SQL,
@@ -221,7 +221,7 @@ export async function GetFormasPGTO() {
 }
 
 export async function GetCondicaoPGTO(valor: number, tabela: string) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const body: string = JSON.stringify({
     pSQL: SQL_CONDICAO_PGTO,
@@ -268,7 +268,7 @@ export async function GetCondicaoPGTO(valor: number, tabela: string) {
 }
 
 export async function GetTransport() {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iTransportadora[]>>(
     ROUTE_SELECT_SQL,
@@ -302,7 +302,7 @@ export async function GetTransport() {
 }
 
 export async function SavePreVenda(PreVenda: iPreVenda) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const responseInsert = await CustomFetch<iMovimento>(ROUTE_SAVE_PRE_VENDA, {
     body: JSON.stringify(PreVenda),

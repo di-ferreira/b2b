@@ -10,7 +10,7 @@
 // ) {
 //   try {
 //     let { banco, cic, nossoNumero } = params;
-//     console.log('banco: ', banco);
+//
 
 //     // Normaliza banco igual seu código original
 //     if (banco.toUpperCase() === 'CAIXA ECONOMICA') {
@@ -23,7 +23,7 @@
 
 //     // Constrói o caminho completo
 //     const filePath = path.join(PDFS_DIR, banco, fileName);
-//     console.log('filePath:', filePath);
+//
 
 //     if (!fs.existsSync(filePath)) {
 //       return NextResponse.json(
@@ -46,7 +46,7 @@
 //       },
 //     });
 //   } catch (error) {
-//     console.error('Erro ao gerar boleto:', error);
+//
 //     return NextResponse.json(
 //       { error: 'Erro interno ao gerar boleto' },
 //       { status: 500 }
@@ -91,9 +91,8 @@ export async function GET(
 ) {
   try {
     let { banco, cic, nossoNumero } = params;
-    console.log('banco: ', banco);
+
     const fileName = `Boleto_${cic}_${nossoNumero}.pdf`;
-    console.log('fileName: ', fileName);
 
     const possibleFolders = resolveBancoFolder(banco);
 
@@ -102,16 +101,12 @@ export async function GET(
 
     for (const folder of possibleFolders) {
       const filePath = path.join(PDFS_DIR, folder, fileName);
-      console.log('filePath: ', filePath);
 
       if (fs.existsSync(filePath)) {
         fileBuffer = fs.readFileSync(filePath);
         foundFileName = fileName;
         break;
       }
-
-      console.log('foundFileName: ', foundFileName);
-      console.log('fileBuffer: ', fileBuffer);
     }
 
     if (!fileBuffer || !foundFileName) {
@@ -133,7 +128,6 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Erro ao gerar boleto:', error);
     return NextResponse.json(
       { error: 'Erro interno ao gerar boleto' },
       { status: 500 }

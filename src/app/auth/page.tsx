@@ -6,7 +6,7 @@ import Logo from '../../../public/LogoAutosul.png';
 import { AuthForm } from './_components/authForm';
 
 export default function Page() {
-  const tokenCookie = getCookie('token', { cookies });
+  const tokenCookie = getCookie('token_b2b', { cookies });
   if (tokenCookie !== undefined) {
     redirect('/app/dashboard');
   }

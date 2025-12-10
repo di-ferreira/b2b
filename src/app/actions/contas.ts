@@ -24,7 +24,6 @@ export async function GetBoletoCliente(conta: iContas): Promise<NextResponse> {
 
     // Constrói o caminho completo
     const filePath = path.join(PDFS_DIR, banco, fileName);
-    console.log('filePath: ', filePath);
 
     // Verifica se o arquivo existe
     if (!fs.existsSync(filePath)) {
@@ -50,7 +49,6 @@ export async function GetBoletoCliente(conta: iContas): Promise<NextResponse> {
       },
     });
   } catch (error) {
-    console.error('Erro ao gerar boleto:', error);
     return NextResponse.json(
       { error: 'Erro interno ao gerar boleto' },
       { status: 500 }

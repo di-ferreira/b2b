@@ -35,7 +35,7 @@ export function TablePagination<T>({
   const [PaginationOptions, setPaginationOptions] =
     useState<tpPaginationValues>({
       CurrentPage: 1,
-      RowsPerPage: RowsPerPageOptions[0],
+      RowsPerPage: RowsPerPageOptions[3],
       TotalPages: 0,
       TotalRegisters: QuantityRegiters,
     });

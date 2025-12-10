@@ -1,5 +1,5 @@
 'use server';
-import { Response, ResponseType } from '@/@types';
+import { iApiResult, ResponseType } from '@/@types';
 import { iContas } from '@/@types/Contas';
 import { iFilter, iFilterQuery } from '@/@types/Filter';
 import { iItensOrcamento, iOrcamento } from '@/@types/Orcamento';
@@ -90,7 +90,7 @@ async function CreateQueryParams(filter: iFilter<iContas>): Promise<string> {
   });
 
   // 3. Adiciona filtros fixos (VENDEDOR e DATA)
-  const ClienteLocal: string = await getCookie('user');
+  const ClienteLocal: string = await getCookie('user_b2b');
 
   // let dateFilter = '';
   // dateFilter = `year(DATA) eq ${dayjs()
@@ -121,11 +121,11 @@ async function CreateQueryParams(filter: iFilter<iContas>): Promise<string> {
 }
 
 export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
-  const tokenCookie = await getCookie('token');
-  const ClienteLocal: string = await getCookie('user');
+  const tokenCookie = await getCookie('token_b2b');
+  const ClienteLocal: string = await getCookie('user_b2b');
   const DataBusca: string = dayjs().format('YYYY-MM-DD');
 
-  const response = await CustomFetch<Response<iOrcamento[]>>(
+  const response = await CustomFetch<iApiResult<iOrcamento[]>>(
     `${ROUTE_GET_ALL_CONTAS}?$filter=(PV eq 'N' or PV eq null) and DATA eq ${DataBusca} and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE,
     ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento, ItensOrcamento/PRODUTO,ItensOrcamento/ORCAMENTO,
     ItensOrcamento/PRODUTO/ListaChaves`,
@@ -138,7 +138,7 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
     }
   );
 
-  const result: iOrcamento = response.body.value![0];
+  const result: iOrcamento = response.body.Data![0];
 
   if (result === undefined) {
     return {
@@ -177,7 +177,7 @@ export async function GetContasAPagarFromCliente(
   filter: iFilter<iContas> | null | undefined
 ): Promise<ResponseType<iDataResultTable<iContas>>> {
   const Cliente: string = await getCookie('CIC');
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateQueryParams(filter)
@@ -223,8 +223,8 @@ export async function GetContasAPagarFromCliente(
 }
 
 export async function GetContasDashboard() {
-  const Cliente: string = await getCookie('user');
-  const tokenCookie = await getCookie('token');
+  const Cliente: string = await getCookie('user_b2b');
+  const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1&$expand=CLIENTE&$orderby=VENCIMENTO desc&$inlinecount=allpages`;
 
@@ -262,7 +262,7 @@ export async function GetContasDashboard() {
 export async function GetConta(
   OrcamentoNumber: string | number
 ): Promise<ResponseType<iOrcamento>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iOrcamento>(
     `${ROUTE_GET_ALL_CONTAS}(${OrcamentoNumber})?$expand=VENDEDOR,CLIENTE,

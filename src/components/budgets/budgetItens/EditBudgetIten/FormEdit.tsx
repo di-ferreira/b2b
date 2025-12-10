@@ -1,29 +1,27 @@
 'use client';
-import { ResponseType } from '@/@types';
 import { iCliente } from '@/@types/Cliente';
-import { iItemInserir, iItensOrcamento } from '@/@types/Orcamento';
+import { iItemInserir, iItensOrcamento, iOrcamento } from '@/@types/Orcamento';
 import { iListaSimilare, iProduto, iSaleHistory } from '@/@types/Produto';
 import { iColumnType, iDataResultTable } from '@/@types/Table';
-import { GetOrcamento } from '@/app/actions/orcamento';
+import { addItem, GetOrcamento, updateItem } from '@/app/actions/orcamento';
 import {
   GetNewPriceFromTable,
   GetProduct,
   GetProductPromotion,
+  GetProducts,
   GetSaleHistory,
-  SuperFindProducts,
+  GetSimilares,
 } from '@/app/actions/produto';
 import { DataTable } from '@/components/CustomDataTable';
 import { Loading } from '@/components/Loading';
+import { SearchProductsModal } from '@/components/products/SearchProductsModal';
 import SuperSearchProducts from '@/components/products/SuperSearchProduct';
 import ToastNotify from '@/components/ToastNotify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/components/ui/use-toast';
-import useModal from '@/hooks/useModal';
 import { FormatToCurrency } from '@/lib/utils';
-import useOrcamento from '@/store/orcamentoStore';
-import { faPlus, faSave } from '@fortawesome/free-solid-svg-icons';
+import { faPlus, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -31,13 +29,14 @@ import { tableSalesHistoryHeaders } from './columns';
 
 interface iFormEditItem {
   item?: iItensOrcamento;
+  budget: iOrcamento;
   CallBack?: () => void;
   onCloseModal?: () => void;
 }
 
-const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
-  const { current, newItem, updateItem } = useOrcamento();
-  const { showModal } = useModal();
+const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
+  const [IsVisibleModalProducts, setIsVisibleModalProducts] =
+    useState<boolean>(false);
   const [budgetItem, setBudgetItem] = useState<iItensOrcamento>({
     QTD: 1,
     VALOR: 0,
@@ -56,12 +55,13 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
     ORCAMENTO: 0,
     PRODUTO: {} as iProduto,
   });
+  const [Budget, setBudget] = useState<iOrcamento>(budget);
   const [productSelected, setProductSelected] = useState<iProduto>(
     {} as iProduto
   );
   const [Similares, setSimilares] = useState<iListaSimilare[]>([]);
   const [SalesHistory, setSalesHistory] = useState<iSaleHistory[]>([]);
-  let [SerachedProducts, setSerachedProducts] = useState<
+  let [SerachedProducts, setSearchedProducts] = useState<
     iDataResultTable<iProduto>
   >({
     Qtd_Registros: 0,
@@ -81,7 +81,7 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
     let response;
     let message = '';
     const itemSave: iItemInserir = {
-      pIdOrcamento: current.ORCAMENTO,
+      pIdOrcamento: budget.ORCAMENTO,
       pItemOrcamento: {
         CodigoProduto: WordProducts,
         Desconto: 0,
@@ -98,7 +98,7 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
       // OnCloseModal();
       message = 'Item editado com sucesso';
     } else {
-      response = await newItem(itemSave);
+      response = await addItem(itemSave);
       // OnCloseModal();
       message = 'Item adicionado com sucesso';
     }
@@ -124,25 +124,34 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
     setIsOferta(false);
   }
 
-  async function UpdateProduct(prod: iProduto) {
+  async function GetPromotionalPrice(prod: iProduto) {
     let new_price = prod.PRECO;
     let promotionalProduct = await GetProductPromotion(prod);
 
-    let history = await GetSaleHistory(current.CLIENTE, prod);
-
     if (promotionalProduct.error !== undefined) {
-      new_price = (await GetNewPriceFromTable(prod, current.CLIENTE.Tabela))
-        .value!;
+      let tablePrice = await GetNewPriceFromTable(prod, Budget.CLIENTE.Tabela);
+      new_price = tablePrice.value ? tablePrice.value : prod.PRECO;
     }
 
     if (promotionalProduct.value !== undefined) {
       setIsOferta(true);
       new_price = promotionalProduct.value.OFERTA;
     }
+    return new_price;
+  }
+
+  async function UpdateProduct(prod: iProduto) {
+    let new_price = prod.PRECO;
+    let history = await GetSaleHistory(budget.CLIENTE, prod);
+
+    new_price = await GetPromotionalPrice(prod);
 
     let newQtd = 1;
+    new_price = new_price === undefined ? prod.PRECO : new_price;
+
     if (prod !== undefined) {
       newQtd = handleCalcQTD(budgetItem.QTD, prod);
+
       setBudgetItem(
         (old) =>
           (old = {
@@ -154,12 +163,24 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
             TOTAL: new_price * budgetItem.QTD,
           })
       );
-
       history.value !== null && setSalesHistory((old) => [...history.value!]);
+
+      let prodSimilares = await GetSimilares(prod.PRODUTO);
+
+      let similaresFiltrados: iListaSimilare[] = [];
+      if (prodSimilares.value !== undefined && prodSimilares.value !== null) {
+        similaresFiltrados = prodSimilares.value.filter((similar) => {
+          return (
+            similar.EXTERNO.ATIVO !== 'N' &&
+            similar.EXTERNO.VENDA !== 'N' &&
+            similar.EXTERNO.TRANCAR !== 'S'
+          );
+        });
+      }
 
       setQtdItem((old) => (old = newQtd.toString()));
       setProductSelected(prod);
-      setSimilares((old) => [...prod.ListaSimilares]);
+      setSimilares((old) => [...similaresFiltrados]);
       setWordProducts(prod.PRODUTO);
       inputQTDRef.current?.focus();
     }
@@ -167,9 +188,37 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
 
   async function loadingProduct(product: iProduto) {
     setLoading(true);
+    setIsVisibleModalProducts(false);
+
     try {
       const prod = await GetProduct(product.PRODUTO);
-      UpdateProduct(prod.value!);
+
+      // ✅ Verifique se a resposta foi bem-sucedida e tem valor
+      if (prod.error !== undefined) {
+        ToastNotify({
+          message: `Erro ao carregar produto: ${
+            prod.error.message || prod.error
+          }`,
+          type: 'error',
+        });
+        return; // ❌ Não continue se houver erro
+      }
+
+      if (!prod.value) {
+        ToastNotify({
+          message: 'Produto não encontrado no sistema',
+          type: 'error',
+        });
+        return; // ❌ Não continue se value for null/undefined
+      }
+
+      // ✅ Agora sim, temos um produto válido
+      UpdateProduct(prod.value);
+    } catch (e: any) {
+      ToastNotify({
+        message: `Erro inesperado ao carregar produto: ${e.message}`,
+        type: 'error',
+      });
     } finally {
       setLoading(false);
     }
@@ -178,57 +227,103 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
   async function findProduct() {
     setLoading(true);
 
-    const resultProduct = await GetProduct(WordProducts);
-
-    if (
-      resultProduct.value !== undefined &&
-      resultProduct.value?.ATIVO !== 'N' &&
-      resultProduct.value?.VENDA !== 'N'
-    ) {
-      UpdateProduct(resultProduct.value);
-      setLoading(false);
-    } else if (
-      resultProduct.error !== undefined ||
-      (resultProduct.value?.ATIVO !== 'S' && resultProduct.value?.VENDA !== 'S')
-    ) {
-      SuperFindProducts({
-        filter: [{ key: 'PRODUTO', value: WordProducts }],
-      })
-        .then(async (products: ResponseType<iDataResultTable<iProduto>>) => {
-          if (products.value !== undefined) {
-            if (products.value.Qtd_Registros === 1) {
-              loadingProduct(products.value.value[0]);
-            } else {
-              setSerachedProducts((old) => (old = products.value!));
-              showModal();
-            }
-          }
-
-          if (products.error !== undefined) {
-            ToastNotify({
-              message: `Erro: ${products.error.message}`,
-              type: 'error',
-            });
-          }
-        })
-        .catch((e) => {
-          toast({
-            title: 'Error!',
-            description: `Erro: ${e.message}`,
-            variant: 'destructive',
-          });
-        })
-        .finally(() => {
-          inputQTDRef.current?.focus();
-
-          setLoading(false);
-        });
-    } else {
-      ToastNotify({
-        message: `Erro: Produto não disponível para venda`,
-        type: 'error',
+    try {
+      const products = await GetProducts({
+        top: 15,
+        skip: 0,
+        orderBy: 'PRODUTO',
+        filter: [
+          {
+            key: 'PRODUTO',
+            value: WordProducts.toUpperCase(),
+            typeSearch: 'like',
+          },
+          {
+            key: 'REFERENCIA',
+            value: WordProducts.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'NOME',
+            value: WordProducts.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'APLICACOES',
+            value: WordProducts.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'TRANCAR',
+            value: 'N',
+            typeCondition: 'and',
+            typeSearch: 'eq',
+          },
+          { key: 'VENDA', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
+          { key: 'ATIVO', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
+        ],
       });
 
+      if (products.value !== undefined && products.value.Qtd_Registros > 0) {
+        if (products.value.Qtd_Registros === 1) {
+          const produto = products.value.value[0];
+
+          const isValidProduct =
+            produto &&
+            produto.ATIVO !== 'N' &&
+            produto.VENDA !== 'N' &&
+            produto.TRANCAR !== 'S';
+
+          if (isValidProduct) {
+            setProductSelected({} as iProduto); // 👈 Limpa o anterior
+            setSimilares([]);
+            setSalesHistory([]);
+            UpdateProduct(produto);
+            return;
+          }
+
+          ToastNotify({
+            message: 'Produto não encontrado ou indisponível para venda',
+            type: 'error',
+          });
+
+          // loadingProduct(produto);
+        } else {
+          setSearchedProducts({
+            Qtd_Registros: products.value.Qtd_Registros,
+            value: products.value.value.filter(
+              (p) => p.ATIVO !== 'N' && p.VENDA !== 'N' && p.TRANCAR !== 'S'
+            ),
+          });
+          setIsVisibleModalProducts(true);
+        }
+      } else {
+        setProductSelected({} as iProduto);
+        setSimilares([]);
+        setSalesHistory([]);
+        // ❌ Nenhum produto encontrado após a segunda busca
+        ToastNotify({
+          message: 'Produto não encontrado ou indisponível para venda',
+          type: 'error',
+        });
+      }
+
+      if (products.error !== undefined) {
+        ToastNotify({
+          message: `Erro: ${products.error.message}`,
+          type: 'error',
+        });
+      }
+    } catch (e: any) {
+      ToastNotify({
+        message: `Erro inesperado: ${e.message}`,
+        type: 'error',
+      });
+    } finally {
+      inputQTDRef.current?.focus();
       setLoading(false);
     }
   }
@@ -242,24 +337,33 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
 
   const handleCalcQTD = (qtd: number, product: iProduto): number => {
     let newQtd = 1;
-    let multiplo = product.MULTIPLO_COMPRA;
 
-    if (product.QTD_VENDA > 1) multiplo = product.QTD_VENDA;
+    // Garantir que MULTIPLO_COMPRA e QTD_VENDA são números válidos
+    const multiploCompra = Number(product.MULTIPLO_COMPRA) || 1;
+    const qtdVenda = Number(product.QTD_VENDA) || 1;
 
+    // Decidir qual usar como múltiplo
+    const multiplo = qtdVenda > 1 ? qtdVenda : multiploCompra;
+
+    // Calcular nova quantidade
     newQtd = Math.ceil(qtd / multiplo) * multiplo;
+
     return newQtd;
   };
 
   async function onChangeQTD(e: React.ChangeEvent<HTMLInputElement>) {
     let newQtd = Number(e.target.value);
-    if (isNaN(newQtd)) newQtd = 1;
+
+    if (Number.isNaN(newQtd) || newQtd < 1) {
+      newQtd = 1;
+    }
     const finalQtd = handleCalcQTD(newQtd, productSelected);
 
     setQtdItem(finalQtd.toString());
 
     const new_price = await GetNewPriceFromTable(
       productSelected,
-      current.CLIENTE.Tabela
+      Budget.CLIENTE.Tabela
     );
 
     setBudgetItem((prevBudgetItem) => ({
@@ -272,10 +376,6 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
 
   async function LoadItem(cliente: iCliente) {
     if (item) {
-      const new_price = await GetNewPriceFromTable(
-        item.PRODUTO,
-        cliente.Tabela
-      );
       setProductSelected(
         (old) =>
           (old = {
@@ -283,12 +383,18 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
           })
       );
 
+      let new_price: number = item.PRODUTO.PRECO;
+
+      new_price = await GetPromotionalPrice(item.PRODUTO);
+
+      new_price = new_price === undefined ? item.PRODUTO.PRECO : new_price;
+
       setBudgetItem(
         (old) =>
           (old = {
             ...item,
             PRODUTO: item.PRODUTO,
-            VALOR: new_price.value!,
+            VALOR: new_price,
             QTD: item.QTD,
             SUBTOTAL: item.SUBTOTAL,
             TOTAL: item.TOTAL,
@@ -304,23 +410,19 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
 
     const loadData = async () => {
       try {
-        const res = await GetOrcamento(current.ORCAMENTO);
+        const res = await GetOrcamento(budget.ORCAMENTO);
+
         if (res.value) {
+          setBudget(res.value);
           LoadItem(res.value.CLIENTE);
         }
       } catch (err: any) {
-        console.error('Erro ao carregar orçamento:', err);
         ToastNotify({ message: err.message, type: 'error' });
       }
     };
 
     loadData();
-
-    // Cleanup opcional se necessário
-    return () => {
-      // Código de limpeza aqui (se aplicável)
-    };
-  }, [current.ORCAMENTO, item?.PRODUTO.PRODUTO]);
+  }, [budget.ORCAMENTO, item?.PRODUTO.PRODUTO]);
 
   const tableSimilaresHeaders: iColumnType<iListaSimilare>[] = [
     {
@@ -503,6 +605,10 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
                 let newQtdText = e.target.value;
                 let newQtd = Number(newQtdText);
 
+                if (Number.isNaN(newQtd) || newQtd < 1) {
+                  newQtd = 1;
+                }
+
                 setQtdItem(newQtdText);
 
                 setBudgetItem((prevBudgetItem) => ({
@@ -581,12 +687,33 @@ const FormEdit = ({ item, CallBack, onCloseModal }: iFormEditItem) => {
               SALVAR
             </Button>
           </div>
+          <div className='w-fit'>
+            <Button
+              type='button'
+              className={`bg-emsoft_danger-main hover:bg-emsoft_danger-light flex w-fit h-[35px] p-3 gap-3`}
+              title='SAIR'
+              onClick={() => onCloseModal && onCloseModal()}
+            >
+              <FontAwesomeIcon
+                icon={faTimes}
+                size='xl'
+                title='SALVAR'
+                className='text-white'
+              />
+              SAIR
+            </Button>
+          </div>
         </footer>
-        <SuperSearchProducts
-          words={WordProducts}
-          data={SerachedProducts}
-          CallBack={loadingProduct}
-        />
+        <SearchProductsModal
+          modalTitle={'Busca de Produtos'}
+          IsVisible={IsVisibleModalProducts}
+        >
+          <SuperSearchProducts
+            words={WordProducts}
+            data={SerachedProducts}
+            CallBack={loadingProduct}
+          />
+        </SearchProductsModal>
       </form>
       {loading && <Loading />}
     </div>

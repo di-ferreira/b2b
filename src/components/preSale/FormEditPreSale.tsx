@@ -105,7 +105,7 @@ const FormEditPreSale = () => {
     Desconto: 0,
     Origem: '',
     PedidoEcommerce: '',
-    TipoEntrega: '',
+    TipoEntrega: undefined,
     ValorFrete: 0,
   });
 

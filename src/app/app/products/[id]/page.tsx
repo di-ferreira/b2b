@@ -56,18 +56,16 @@ const Customers = async ({ params }: iCustomerPage) => {
   const contasAVencer = naoVencidas.value?.Data[0]?.VALOR ?? 0;
 
   const contasAbertas =
-    emAberto.value?.Data?.reduce(
+    emAberto.value?.reduce(
       (total: any, conta: { RESTA: any }) => total + conta.RESTA,
       0
     ) ?? 0;
 
   const listaDebitos: iCredito[] =
-    emAberto.value?.Data?.filter((abertos: iCredito) => abertos.ATRASO > 0) ??
-    [];
+    emAberto.value?.filter((abertos: iCredito) => abertos.ATRASO > 0) ?? [];
 
   const listaCreditos: iCredito[] =
-    emAberto.value?.Data?.filter((aberto: iCredito) => aberto.ATRASO <= 0) ??
-    [];
+    emAberto.value?.filter((aberto: iCredito) => aberto.ATRASO <= 0) ?? [];
 
   const saldoCompra =
     customer.value.LIMITE - (contasAtrazadas + contasAVencer + contasAbertas);

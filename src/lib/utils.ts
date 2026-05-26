@@ -1,10 +1,14 @@
 import { compareSync, genSaltSync, hashSync } from 'bcryptjs';
-import { type ClassValue, clsx } from 'clsx';
+import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+export const RemoveSpecialCharacter = (value: string) => {
+  return value.replace(/\D/g, ''); // Remove tudo que não é dígito
+};
 
 export const returnExpiresTimes = (minutes: number) => {
   const now = new Date();
@@ -26,53 +30,35 @@ export function compareHash(password: string, hash: string): boolean {
   return compareSync(password, hash);
 }
 
-export function MaskCnpjCpf(value: string): string {
-  let result = '';
-  if (!value) return result;
-  if (value.length <= 12)
-    result = value
-      .replace(/\D/g, '')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
+export function MaskCnpjCpf(value: string | undefined): string {
+  let Result: String = '';
+  if (value !== undefined) {
+    if (!value) Result = '';
 
-  if (value.length > 12)
-    result = value
-      .replace(/[\D]/g, '')
-      .replace(/(\d{2})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1.$2')
-      .replace(/(\d{3})(\d)/, '$1/$2')
-      .replace(/(\d{4})(\d)/, '$1-$2')
-      .replace(/(-\d{2})\d+?$/, '$1');
+    if (value.length <= 12)
+      Result = String(
+        value
+          .replace(/\D/g, '')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d{1,2})/, '$1-$2')
+          .replace(/(-\d{2})\d+?$/, '$1'),
+      );
 
-  return result;
+    if (value.length > 12)
+      Result = String(
+        value
+          .replace(/[\D]/g, '')
+          .replace(/(\d{2})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1.$2')
+          .replace(/(\d{3})(\d)/, '$1/$2')
+          .replace(/(\d{4})(\d)/, '$1-$2')
+          .replace(/(-\d{2})\d+?$/, '$1'),
+      );
+  }
+
+  return Result.toString();
 }
-
-/**
- * Retorna a data de ontem no formato "YYYY-MM-DD"
- * @returns string - Data formatada
- */
-export function getDate(): string {
-  const ontem = new Date();
-  ontem.setDate(ontem.getDate() - 1);
-
-  const ano = ontem.getFullYear();
-  const mes = String(ontem.getMonth() + 1).padStart(2, '0'); // Mês é zero-based
-  const dia = String(ontem.getDate()).padStart(2, '0');
-
-  return `${ano}-${mes}-${dia}`;
-}
-
-/**
- * Limpa um CNPJ e retorna somente os números
- * @param cnpj - CNPJ com ou sem máscara
- * @returns string - Apenas os números do CNPJ
- */
-
-export const RemoveSpecialCharacter = (value: string) => {
-  return value.replace(/\D/g, ''); // Remove tudo que não é dígito
-};
 
 export const FormatToCurrency = (value: string): string => {
   const BrlValue = Intl.NumberFormat('pt-BR', {
@@ -107,5 +93,21 @@ export function loadStorage<T>(key: string): T {
 
 export function removeStorage(key: string): void {
   localStorage.removeItem(key);
+}
+
+export function toIntSafe(value: unknown): number {
+  if (value === null || value === undefined) return 0;
+
+  const cleaned = String(value)
+    .replace(/\./g, '') // remove separador de milhar
+    .replace(',', '.'); // caso venha decimal pt-BR
+
+  const parsed = Number(cleaned);
+
+  if (!Number.isFinite(parsed)) {
+    throw new Error(`Valor inválido para inteiro: ${value}`);
+  }
+
+  return Math.trunc(parsed);
 }
 

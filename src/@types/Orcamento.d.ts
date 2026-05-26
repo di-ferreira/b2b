@@ -43,8 +43,11 @@ export interface iItensOrcamento {
 }
 export interface iOrcamento {
   ORCAMENTO: number;
-  DATA?: string;
+  VENDEDOR: iVendedor | number;
+  CLIENTE: iCliente | number;
+  ItensOrcamento: iItensOrcamento[];
   TOTAL: number;
+  DATA?: string;
   COM_FRETE?: string;
   FRETE_POR_CONTA?: string;
   TAXA_ENTREGA?: number;
@@ -68,15 +71,12 @@ export interface iOrcamento {
   MD5?: string;
   OS?: number;
   LIDO?: string;
-  PV?: string;
+  PV?: string | null;
   TIPO?: string;
   PEDIDO_TIPO?: string;
   SEPARACAO?: string;
   BLOQUEADO?: string;
-  VENDEDOR: iVendedor;
-  CLIENTE: iCliente;
-  VENDEDOR2?: iVendedor;
-  ItensOrcamento: iItensOrcamento[];
+  VENDEDOR2?: iVendedor | number;
 }
 
 export interface iOrcamentoInserir {

@@ -6,7 +6,7 @@ import { CustomFetch } from '@/services/api';
 import { getCookie, setCookie } from '.';
 
 export async function LoginUser(
-  user: userLogin
+  user: userLogin,
 ): Promise<ResponseType<iCliente>> {
   const resultVenda = await vendaLogin();
 
@@ -136,7 +136,7 @@ async function vendaLogin(): Promise<ResponseType<string>> {
       }),
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-    }
+    },
   );
 
   return data.body;
@@ -152,7 +152,7 @@ async function getCliente(data: {
     `/Clientes?$filter=CIC eq '${
       data.user
     }' or CIC eq '${RemoveSpecialCharacter(
-      data.user
+      data.user,
     )}'&$expand=Telefones, AgendamentosList, PendenciasList`,
     {
       method: 'GET',
@@ -160,7 +160,7 @@ async function getCliente(data: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${data.token_b2b}`,
       },
-    }
+    },
   );
   if (responseData.status !== 200) {
     return {

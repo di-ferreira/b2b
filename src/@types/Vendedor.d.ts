@@ -17,8 +17,8 @@ export interface iVendedor {
   SALARIO: number;
   VALE_TRANSPORTE: number;
   NASCIMENTO: string;
-  CPF: string;
-  IDENTIDADE: string;
+  CPF: string | null;
+  IDENTIDADE: string | null;
   ESTADO_CIVIL: string;
   PIS: string;
   NACIONALIDADE: string;
@@ -34,5 +34,6 @@ export interface iVendedor {
   META_MARKUP: number;
   META_INDEXADOR: number;
   SETOR: string;
-  TABELAS_PERMITIDAS: string;
+  TABELAS_PERMITIDAS: string | null;
 }
+

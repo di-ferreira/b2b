@@ -166,3 +166,16 @@ export interface iPgtoEmAberto {
   DOC: string;
   EMISSAO_BOLETO: string;
 }
+
+export interface iFinanceiroCliente {
+  ContasAtrazadas: number;
+  ContasAVencer: number;
+  ContasAbertas: number;
+  TotalCreditos: number;
+  LimiteCredito: number;
+  SaldoCompra: number;
+  ListaDebitos: iCredito[];
+  ListaDebitosNaoVencidos: iCredito[];
+  ListaCreditos: iCredito[];
+}
+

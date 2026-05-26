@@ -24,10 +24,13 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
       required,
       labelText = '',
       labelPosition = 'left',
+      value,
+      onChange,
       ...props
     },
     ref
   ) => {
+    const isReadOnly = value !== undefined && onChange === undefined;
     return (
       <div
         className={cn(
@@ -50,7 +53,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         </Label>
         <span
           className={cn(
-            `absolute  flex items-center justify-center w-4 h-auto text-lg`,
+            `absolute flex items-center justify-center w-4 h-auto text-lg`,
             `left-4 top-2.5`,
             labelText !== '' && `top-8 tablet-portrait:top-11`
           )}
@@ -67,6 +70,9 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           id={id}
           disabled={disabled}
           required={required}
+          readOnly={isReadOnly}
+          value={value}
+          onChange={onChange}
           className={cn(
             `flex h-10 w-full  rounded-md border border-input bg-background p-3 py-2 
                         text-sm text-black ring-offset-background file:border-0 file:bg-transparent file:text-sm

@@ -41,15 +41,15 @@ export function AuthForm() {
     e.preventDefault();
     setErrorMessage('');
 
-    const formData = new FormData(e.currentTarget);
-    const clienteCode = formData.get('cic');
-    const vendedorPassword = String(formData.get('password'));
-    const vendedorPasswordHashed = generateHash(vendedorPassword);
+  const formData = new FormData(e.currentTarget);
+  const clienteCode = formData.get('cic');
+  const vendedorPassword = String(formData.get('password'));
+  const vendedorPasswordHashed = generateHash(vendedorPassword);
 
-    const login = await LoginUser({
-      cliente: MaskCnpjCpf(String(clienteCode)),
-      password: vendedorPasswordHashed,
-    });
+  const login = await LoginUser({
+    cliente: MaskCnpjCpf(String(clienteCode)),
+    password: vendedorPasswordHashed,
+  });
 
     if (login.value === undefined) {
       ToastNotify({

@@ -13,10 +13,17 @@ export interface iApiResult<T> {
   StatusMessage: string;
 }
 
+export interface iApiResultBody<T> {
+  body: T;
+  RecordCount: number;
+  StatusCode: number;
+  StatusMessage: string;
+}
+
 export interface iResultApi<T> {
   status: number;
   statusText: string;
-  value: T[];
+  body: { value: T[] };
 }
 
 export interface iUniqueResult<T> {
@@ -130,5 +137,16 @@ export interface ResponseSQL<T> {
   StatusMessage: string;
   RecordCount: number;
   Data: T;
+}
+
+export interface iCredito {
+  VENCIMENTO: string;
+  DATA: string;
+  TIPO: string;
+  HISTORICO: string;
+  ATRASO: number;
+  RESTA: number;
+  DOC: string;
+  EMISSAO_BOLETO: string;
 }
 

@@ -1,7 +1,7 @@
 import FormEditPreSale from '@/components/preSale/FormEditPreSale';
 
 interface ipreSalePage {
-  params: { id: number };
+  params: { id: string };
 }
 
 const PreSale = async ({ params }: ipreSalePage) => {

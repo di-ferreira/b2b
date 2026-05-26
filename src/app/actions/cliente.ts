@@ -1,7 +1,7 @@
 'use server';
 
-import { iSelectSQL, ResponseSQL, ResponseType } from '@/@types';
-import { iCliente, iPgtoEmAberto } from '@/@types/Cliente';
+import { iCredito, iSelectSQL, ResponseSQL, ResponseType } from '@/@types';
+import { iCliente, iFinanceiroCliente, iPgtoEmAberto } from '@/@types/Cliente';
 import { iFilter } from '@/@types/Filter';
 import { iDataResultTable } from '@/@types/Table';
 import { CustomFetch } from '@/services/api';
@@ -114,7 +114,7 @@ async function CreateFilter(filter: iFilter<iCliente>): Promise<string> {
 }
 
 export async function GetClienteFromVendedor(
-  filter: iFilter<iCliente> | null | undefined
+  filter: iFilter<iCliente> | null | undefined,
 ): Promise<ResponseType<iDataResultTable<iCliente>>> {
   const VendedorLocal: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');
@@ -155,7 +155,7 @@ export async function GetClienteFromVendedor(
 }
 
 export async function GetCliente(
-  customerCode: string | number
+  customerCode: string | number,
 ): Promise<ResponseType<iCliente>> {
   const tokenCookie = await getCookie('token_b2b');
 
@@ -167,7 +167,7 @@ export async function GetCliente(
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   const result: iCliente = response.body;
@@ -299,7 +299,7 @@ export async function GetPGTOsEmAberto(cliente: number) {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (response.status !== 200) {
@@ -347,7 +347,7 @@ export async function GetClientesPgtoEmAberto() {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (response.status !== 200) {
@@ -364,5 +364,86 @@ export async function GetClientesPgtoEmAberto() {
     value: response.body.Data,
     error: undefined,
   };
+}
+
+export async function GetFinanceiroCliente(
+  idCliente: string | number,
+): Promise<ResponseType<iFinanceiroCliente>> {
+  let debitosVencidoTotal: number;
+  let debitosNaoVencidoTotal: number;
+  let emAbertoTotal: number;
+  let creditosTotal: number;
+  let LimiteCredito: number;
+  let SaldoCompraTotal: number;
+  let debitosVencidos: iPgtoEmAberto[];
+  let debitosNaoVencidos: iPgtoEmAberto[];
+  let creditos: iPgtoEmAberto[];
+
+  const numericId = Number(idCliente);
+  try {
+    const customer = await GetCliente(numericId);
+    const emAtrazo = await GetPGTOsAtrazados(numericId);
+    const naoVencidas = await GetPGTOsNaoVencidos(numericId);
+    const emAberto = await GetPGTOsEmAberto(numericId);
+    const pgtoEmAberto =
+      emAberto.value?.filter((aberto: iCredito) => aberto.RESTA > 0) ?? [];
+
+    console.log('getfinanceirocliente customer', customer);
+    console.log('getfinanceirocliente emAtrazo', emAtrazo);
+    console.log('getfinanceirocliente emAberto', emAberto);
+    console.log('getfinanceirocliente pgtoEmAberto', pgtoEmAberto);
+
+    const now = dayjs();
+
+    emAbertoTotal =
+      pgtoEmAberto.reduce((total: any, conta) => total + conta.RESTA, 0) ?? 0;
+    debitosNaoVencidoTotal = naoVencidas.value?.Data[0]?.VALOR ?? 0;
+    debitosVencidoTotal = emAtrazo.value[0]?.VALOR ?? 0;
+
+    debitosNaoVencidos =
+      emAberto.value?.filter((aberto: iCredito) =>
+        dayjs(aberto.VENCIMENTO, 'YYYY-MM-DD').isAfter(now),
+      ) ?? [];
+
+    debitosVencidos =
+      emAberto.value?.filter(
+        (abertos: iCredito) =>
+          abertos.RESTA > 0 &&
+          dayjs(abertos.VENCIMENTO, 'YYYY-MM-DD').isBefore(now),
+      ) ?? [];
+
+    creditos =
+      emAberto.value?.filter((aberto: iCredito) => aberto.RESTA < 0) ?? [];
+
+    creditosTotal =
+      creditos.reduce((total: any, conta) => total + conta.RESTA, 0) ?? 0;
+
+    creditosTotal = creditosTotal < 0 ? creditosTotal * -1 : creditosTotal;
+
+    SaldoCompraTotal = customer.value!.LIMITE + creditosTotal - emAbertoTotal;
+
+    LimiteCredito = customer.value!.LIMITE;
+
+    return {
+      value: {
+        ContasAtrazadas: debitosVencidoTotal,
+        ContasAVencer: debitosNaoVencidoTotal,
+        ContasAbertas: emAbertoTotal,
+        TotalCreditos: creditosTotal,
+        LimiteCredito: LimiteCredito,
+        SaldoCompra: SaldoCompraTotal,
+        ListaDebitos: debitosVencidos,
+        ListaDebitosNaoVencidos: debitosNaoVencidos,
+        ListaCreditos: creditos,
+      },
+      error: undefined,
+    };
+  } catch (err: any) {
+    console.error('err', err);
+    return {
+      value: undefined,
+      error: err.message,
+    };
+  }
 }
 

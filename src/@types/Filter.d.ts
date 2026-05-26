@@ -1,4 +1,4 @@
-export type tTypeSearch = 'eq' | 'ne' | 'like' | 'gt' | 'lt' | 'ge' | 'le';
+export type tTypeSearch = SearchOperator;
 
 export type tTypeCondition = 'and' | 'or';
 export type tGroupOperator = tTypeCondition;

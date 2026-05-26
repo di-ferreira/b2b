@@ -23,7 +23,7 @@ import Link from 'next/link';
 import { RiMedalFill } from 'react-icons/ri';
 
 interface iCustomerPage {
-  params: { id: number };
+  params: { id: string };
 }
 interface iCredito {
   VENCIMENTO: string;
@@ -37,10 +37,11 @@ interface iCredito {
 }
 
 const Customers = async ({ params }: iCustomerPage) => {
-  const customer = await GetCliente(params.id);
-  const emAtrazo = await GetPGTOsAtrazados(params.id);
-  const naoVencidas = await GetPGTOsNaoVencidos(params.id);
-  const emAberto = await GetPGTOsEmAberto(params.id);
+  const id = Number(params.id);
+  const customer = await GetCliente(id);
+  const emAtrazo = await GetPGTOsAtrazados(id);
+  const naoVencidas = await GetPGTOsNaoVencidos(id);
+  const emAberto = await GetPGTOsEmAberto(id);
 
   function parseCurrency(currency: number) {
     return currency.toLocaleString('pt-br', {

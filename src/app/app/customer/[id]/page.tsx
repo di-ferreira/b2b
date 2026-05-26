@@ -207,16 +207,16 @@ function Customers({ params }: iCustomerPage) {
     try {
       const id = Number(params.id);
       console.log('load data param', id);
+      const customer = await GetCliente(id);
       const resultFinanceiro = await GetFinanceiroCliente(id);
-      console.log('load data', resultFinanceiro);
+      console.log('load data resultFinanceiro', resultFinanceiro);
+      console.log('load data customer', customer);
 
       if (resultFinanceiro.error !== undefined) {
         throw new Error(resultFinanceiro.error.message);
       }
 
       const financeiro: iFinanceiroCliente = resultFinanceiro.value!;
-
-      const customer = await GetCliente(id);
 
       setcustomer((old) => customer.value!);
       setLimiteCredito((old) => financeiro.LimiteCredito);

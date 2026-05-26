@@ -7,7 +7,7 @@ type BudgetStore = {
   isLoading: boolean;
   error: string | null;
   setCurrent: (budget: iOrcamento) => void;
-  newBudget: (budget: iOrcamento) => Promise<void>;
+  newBudget: () => Promise<void>;
   updateBudget: (budget: iOrcamento) => Promise<void>;
   addItem: (item: iItensOrcamento) => void;
   removeItem: (item: iItensOrcamento) => void;
@@ -20,10 +20,10 @@ const useBudget = create<BudgetStore>((set) => ({
   error: null,
 
   setCurrent: (budget) => set({ current: budget }),
-  newBudget: async (budgetData: iOrcamento) => {
+  newBudget: async () => {
     set({ isLoading: true, error: null });
     try {
-      const result = await NewOrcamento(budgetData);
+      const result = await NewOrcamento();
       if (result.error) {
         throw new Error(result.error.message);
       }

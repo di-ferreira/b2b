@@ -1,5 +1,6 @@
 'use server';
-import { iApiResult, ResponseType } from '@/@types';
+import { iApiResult, iResultApi, ResponseType } from '@/@types';
+import { iCliente } from '@/@types/Cliente';
 import {
   iItemInserir,
   iItemRemove,
@@ -20,11 +21,65 @@ import { ODataQueryBuilder } from '@/lib/queryFilter';
 import { CustomFetch } from '@/services/api';
 import dayjs from 'dayjs';
 import { getCookie } from '.';
+import { getClienteAction } from './user';
 import { getVendedorAction } from './vendedor';
 const ROUTE_GET_ALL_ORCAMENTO = '/Orcamento';
 const ROUTE_SAVE_ORCAMENTO = '/ServiceVendas/NovoOrcamento';
 const ROUTE_REMOVE_ITEM_ORCAMENTO = '/ServiceVendas/ExcluirItemOrcamento';
 const ROUTE_SAVE_ITEM_ORCAMENTO = '/ServiceVendas/NovoItemOrcamento';
+
+export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
+  const tokenCookie = await getCookie('token_b2b');
+  const ClienteLocal: string = await getCookie('user_b2b');
+  const DataBusca: string = dayjs().format('YYYY-MM-DD');
+
+  const response = await CustomFetch<iResultApi<iOrcamento>>(
+    `${ROUTE_GET_ALL_ORCAMENTO}?$filter=(PV eq 'N' or PV eq null) and DATA eq ${DataBusca} and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE,
+    ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento, ItensOrcamento/PRODUTO,ItensOrcamento/ORCAMENTO,
+    ItensOrcamento/PRODUTO/ListaChaves`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  const result: iOrcamento = response.body.value[0];
+
+  if (result === undefined) {
+    return {
+      value: undefined,
+      error: {
+        code: '404',
+        message: 'Not Found',
+      },
+    };
+  }
+
+  if (response.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.status),
+        message: String(response.statusText),
+      },
+    };
+  }
+
+  const itensOrcs: iItensOrcamento[] = result.ItensOrcamento.map((item) => {
+    return { ...item, ORCAMENTO: result.ORCAMENTO };
+  });
+
+  return {
+    value: {
+      ...result,
+      ItensOrcamento: itensOrcs,
+    },
+    error: undefined,
+  };
+}
 
 export async function GetOrcamentosFromVendedor(
   filter?: QueryOptions<iOrcamento>,
@@ -197,37 +252,17 @@ export async function GetOrcamento(
   };
 }
 
-export async function NewOrcamento(orcamento: iOrcamento) {
-  const tokenCookie = await getCookie('token');
-  const VendedorLocal: string = await getCookie('user');
-  const ItensOrcamento: iItemInserir[] = [];
+export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
+  const tokenCookie = await getCookie('token_b2b');
 
-  orcamento.ItensOrcamento?.map((item) => {
-    const ItemInsert: iItemInserir = {
-      pIdOrcamento: 0,
-      pItemOrcamento: {
-        CodigoProduto: item.PRODUTO ? item.PRODUTO.PRODUTO : '',
-        Qtd: item.QTD,
-        SubTotal: item.SUBTOTAL,
-        Tabela: item.TABELA ? item.TABELA : 'SISTEMA',
-        Total: item.TOTAL,
-        Valor: item.VALOR,
-        Frete: 0,
-        Desconto: 0,
-      },
-    };
-    ItensOrcamento.push(ItemInsert);
-  });
+  const cliente: iCliente = (await getClienteAction()).value!;
 
   const OrcamentoInsert: iOrcamentoInserir = {
-    CodigoCliente:
-      typeof orcamento.CLIENTE === 'number'
-        ? orcamento.CLIENTE
-        : orcamento.CLIENTE.CLIENTE,
-    CodigoVendedor1: Number(VendedorLocal),
-    Total: orcamento.TOTAL,
-    SubTotal: orcamento.TOTAL,
-    Itens: ItensOrcamento,
+    CodigoCliente: cliente.CLIENTE,
+    CodigoVendedor1: cliente.VENDEDOR,
+    Total: 0,
+    SubTotal: 0,
+    Itens: [],
   };
 
   const responseInsert = await CustomFetch<iApiResult<iOrcamento>>(
@@ -242,17 +277,17 @@ export async function NewOrcamento(orcamento: iOrcamento) {
     },
   );
 
-  if (responseInsert.body!.StatusCode !== 200) {
+  if (responseInsert.body.StatusCode !== 200) {
     return {
       value: undefined,
       error: {
-        code: String(responseInsert.body!.StatusCode),
-        message: String(responseInsert.body!.StatusMessage),
+        code: String(responseInsert.body.StatusCode),
+        message: String(responseInsert.body.StatusMessage),
       },
     };
   }
 
-  const response = await GetOrcamento(responseInsert.body!.Data.ORCAMENTO);
+  const response = await GetOrcamento(responseInsert.body.Data.ORCAMENTO);
 
   if (response.error !== undefined) {
     return {

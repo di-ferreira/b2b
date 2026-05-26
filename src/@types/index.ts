@@ -23,7 +23,7 @@ export interface iApiResultBody<T> {
 export interface iResultApi<T> {
   status: number;
   statusText: string;
-  body: { value: T[] };
+  value: T[];
 }
 
 export interface iUniqueResult<T> {

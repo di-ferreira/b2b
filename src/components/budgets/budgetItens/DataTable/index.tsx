@@ -257,10 +257,12 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
       <div className='flex w-full gap-x-5 items-end justify-end px-5 pt-3 mt-4 border-t-2 border-emsoft_orange-main'>
         <span className='bold text-3xl'>TOTAL:</span>
         <span className='bold text-xl'>
-          {data.TOTAL.toLocaleString('pt-br', {
-            style: 'currency',
-            currency: 'BRL',
-          })}
+          {data !== undefined && data.TOTAL
+            ? data.TOTAL.toLocaleString('pt-br', {
+                style: 'currency',
+                currency: 'BRL',
+              })
+            : 'R$ 0,00'}
         </span>
       </div>
     </section>

@@ -3,7 +3,7 @@ import { iUniqueResult } from '@/@types';
 import { iOrcamento } from '@/@types/Orcamento';
 import DataTableItensBudget from '@/components/budgets/budgetItens/DataTable';
 import { Input } from '@/components/ui/input';
-import useOrcamento from '@/store/orcamentoStore';
+import useBudget from '@/store/BudgetStore';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
@@ -11,7 +11,7 @@ import Link from 'next/link';
 import { useEffect } from 'react';
 
 export default function Cart({ data }: iUniqueResult<iOrcamento>) {
-  const { current, setCurrent } = useOrcamento();
+  const { current, setCurrent } = useBudget();
 
   useEffect(() => {
     setCurrent(data!);
@@ -50,7 +50,7 @@ export default function Cart({ data }: iUniqueResult<iOrcamento>) {
             labelText='Total'
             labelPosition='top'
             value={
-              current.TOTAL
+              current !== undefined && current.TOTAL
                 ? current.TOTAL.toLocaleString('pt-br', {
                     style: 'currency',
                     currency: 'BRL',

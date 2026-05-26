@@ -2,7 +2,6 @@
 
 import { iApiResult } from '@/@types';
 import { iFilter } from '@/@types/Filter';
-import { iMovimentoEventos } from '@/@types/MovimentosEventos';
 import {
   iCondicaoPgto,
   iFormaPgto,
@@ -12,41 +11,25 @@ import {
 } from '@/@types/PreVenda';
 import { iDataResultTable } from '@/@types/Table';
 import { CustomFetch } from '@/services/api';
-import dayjs from 'dayjs';
 import { getCookie } from '.';
 const ROUTE_GET_ALL_PRE_VENDA = '/Movimento';
-const ROUTE_GET_ALL_MOVIMENTOS_EVENTOS = '/MovimentoEventos';
 const ROUTE_SAVE_PRE_VENDA = '/ServiceVendas/NovaPreVenda';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
-const SQL_CONDICAO_PGTO = `SELECT O.id, O.nome, O.parcelas, O.valor_parcela, O.valor_parcela*O.PARCELAS AS VALOR_MINIMO,
-       CASE O.parcelas
-       WHEN 1  THEN O.pz01
-       WHEN 2  THEN CAST((O.pz01+o.pz02)/2 AS INTEGER)
-       WHEN 3  THEN CAST((O.pz01+o.pz02+O.pz03)/3 AS INTEGER)
-       WHEN 4  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04)/4 AS INTEGER)
-       WHEN 5  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05)/5 AS INTEGER)
-       WHEN 6  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06)/6 AS INTEGER)
-       WHEN 7  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07)/7 AS INTEGER)
-       WHEN 8  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08)/8 AS INTEGER)
-       WHEN 9  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09)/9 AS INTEGER)
-       WHEN 10 THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09+O.pz10)/10 AS INTEGER)
-       END AS PM,
-       PZ01,PZ02,PZ03,PZ04,PZ05,PZ06,PZ07,PZ08,PZ09,PZ10, TIPO, DESTACAR_DESCONTO, FORMA,O.DESCONTO_MAX
-FROM OPP O
-WHERE (O.valor_parcela*O.PARCELAS)<=:VALOR AND O.TIPO='V' AND O.tabela=:TABELA
-ORDER BY 6`;
+const SQL_CONDICAO_PGTO = (valor: number, tabela: string) => {
+  return `SELECT O.id, O.nome, O.parcelas, O.valor_parcela, O.valor_parcela*O.PARCELAS AS VALOR_MINIMO, CASE O.parcelas WHEN 1  THEN O.pz01 WHEN 2  THEN CAST((O.pz01+o.pz02)/2 AS INTEGER) WHEN 3  THEN CAST((O.pz01+o.pz02+O.pz03)/3 AS INTEGER) WHEN 4  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04)/4 AS INTEGER) WHEN 5  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05)/5 AS INTEGER) WHEN 6  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06)/6 AS INTEGER) WHEN 7  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07)/7 AS INTEGER) WHEN 8  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08)/8 AS INTEGER) WHEN 9  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09)/9 AS INTEGER) WHEN 10 THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09+O.pz10)/10 AS INTEGER) END AS PM, PZ01,PZ02,PZ03,PZ04,PZ05,PZ06,PZ07,PZ08,PZ09,PZ10, TIPO, DESTACAR_DESCONTO, FORMA,O.DESCONTO_MAX FROM OPP O WHERE (O.valor_parcela*O.PARCELAS)<=${valor} AND O.TIPO='V' AND O.tabela='${tabela}' ORDER BY 6`;
+};
 const SQL_FORMA_PGTO =
   "SELECT C.CARTAO FROM CAR C WHERE C.CAIXA='S' order by 1";
 const SQL_TRANSPORTADORA =
   'SELECT FIRST 1500 F.FORNECEDOR, F.NOME, F.CIDADE FROM FNC F ORDER BY F.NOME';
 
 const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
-  const ClienteLocal: string = await getCookie('user_b2b');
+  const VendedorLocal: string = await getCookie('user');
 
-  let ResultFilter: string = `$filter=TIPOMOV eq 'PRE-VENDA'and CANCELADO eq 'N' and CLIENTE eq ${ClienteLocal}`;
+  let ResultFilter: string = `$filter=TIPOMOV eq 'PRE-VENDA'and CANCELADO eq 'N' and VENDEDOR eq ${VendedorLocal}`;
 
   if (filter.filter && filter.filter.length >= 1) {
-    ResultFilter = `$filter=CLIENTE eq ${ClienteLocal}`;
+    ResultFilter = `$filter=VENDEDOR eq ${VendedorLocal}`;
     const andStr = ' AND ';
     filter.filter.map((itemFilter) => {
       if (itemFilter.typeSearch)
@@ -65,7 +48,9 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
     ResultFilter = ResultFilter.slice(0, -andStr.length);
   }
 
-  const ResultOrderBy = filter.orderBy ? `&$orderby=${filter.orderBy}` : '';
+  const ResultOrderBy = filter.orderBy
+    ? `&$orderby=${filter.orderBy}`
+    : '&$orderby=MOVIMENTO desc,DATA desc';
 
   const ResultSkip = filter.skip ? `&$skip=${filter.skip}` : '&$skip=0';
 
@@ -79,12 +64,12 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 };
 
 export async function GetPreVendas(filter: iFilter<iMovimento>) {
-  const ClienteLocal: string = await getCookie('user_b2b');
+  const VendedorLocal: string = await getCookie('user');
   const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateFilter(filter)
-    : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'PRE-VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+    : `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'PRE-VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=MOVIMENTO desc,DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;
@@ -98,47 +83,8 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
   });
 
   const result: iDataResultTable<iMovimento> = {
-    Qtd_Registros: response.body['@xdata.count'],
-    value: response.body.value,
-  };
-
-  if (response.status !== 200) {
-    return {
-      value: undefined,
-      error: {
-        code: String(response.status),
-        message: String(response.statusText),
-      },
-    };
-  }
-  return {
-    value: result,
-    error: undefined,
-  };
-}
-
-export async function GetMovimentosDashboard() {
-  const ClienteLocal: string = await getCookie('user_b2b');
-  const tokenCookie = await getCookie('token_b2b');
-
-  const FILTER = `?$filter=MOVIMENTO/CLIENTE eq ${ClienteLocal} and MOVIMENTO/TIPOMOV eq 'PRE-VENDA' and MOVIMENTO/CANCELADO eq 'N' and MOVIMENTO/DATA ge ${String(
-    dayjs().subtract(3, 'months').format('YYYY-MM-DD')
-  )}&$inlinecount=allpages&$orderby=MOVIMENTO/MOVIMENTO desc&$expand=MOVIMENTO, MOVIMENTO/Itens_List, MOVIMENTO/CLIENTE `;
-
-  const response = await CustomFetch<{
-    '@xdata.count': number;
-    value: iMovimentoEventos[];
-  }>(`${ROUTE_GET_ALL_MOVIMENTOS_EVENTOS}${FILTER}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `bearer ${tokenCookie}`,
-    },
-  });
-
-  const result: iDataResultTable<iMovimentoEventos> = {
-    Qtd_Registros: response.body['@xdata.count'],
-    value: response.body.value,
+    Qtd_Registros: response.body!['@xdata.count'],
+    value: response.body!.value,
   };
 
   if (response.status !== 200) {
@@ -167,7 +113,7 @@ export async function GetPreVenda(IdPV: number) {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (response.status !== 200) {
@@ -181,7 +127,7 @@ export async function GetPreVenda(IdPV: number) {
   }
 
   return {
-    value: response.body,
+    value: response.body!,
     error: undefined,
   };
 }
@@ -190,32 +136,28 @@ export async function GetFormasPGTO() {
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iFormaPgto[]>>(
-    ROUTE_SELECT_SQL,
+    `${ROUTE_SELECT_SQL}?pSQL=${SQL_FORMA_PGTO}`,
     {
-      method: 'POST',
-      body: JSON.stringify({
-        pSQL: SQL_FORMA_PGTO,
-        pPar: [],
-      }),
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
-  if (response.body.StatusCode !== 200) {
+  if (response.body!.StatusCode !== 200) {
     return {
       value: undefined,
       error: {
-        code: String(response.body.StatusCode),
-        message: String(response.body.StatusMessage),
+        code: String(response.body!.StatusCode),
+        message: String(response.body!.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body.Data,
+    value: response.body!.Data,
     error: undefined,
   };
 }
@@ -223,46 +165,29 @@ export async function GetFormasPGTO() {
 export async function GetCondicaoPGTO(valor: number, tabela: string) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_CONDICAO_PGTO,
-    pPar: [
-      {
-        ParamName: 'VALOR',
-        ParamType: 'ftString',
-        ParamValues: [valor],
-      },
-      {
-        ParamName: 'TABELA',
-        ParamType: 'ftString',
-        ParamValues: [tabela],
-      },
-    ],
-  });
-
   const response = await CustomFetch<iApiResult<iCondicaoPgto[]>>(
-    `${ROUTE_SELECT_SQL}`,
+    `${ROUTE_SELECT_SQL}?pSQL=${SQL_CONDICAO_PGTO(valor, tabela)}`,
     {
-      method: 'POST',
-      body: body,
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
-  if (response.body.StatusCode !== 200) {
+  if (response.body!.StatusCode !== 200) {
     return {
       value: undefined,
       error: {
-        code: String(response.body.StatusCode),
-        message: String(response.body.StatusMessage),
+        code: String(response.body!.StatusCode),
+        message: String(response.body!.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body.Data,
+    value: response.body!.Data,
     error: undefined,
   };
 }
@@ -271,32 +196,28 @@ export async function GetTransport() {
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iTransportadora[]>>(
-    ROUTE_SELECT_SQL,
+    `${ROUTE_SELECT_SQL}?pSQL=${SQL_TRANSPORTADORA}`,
     {
-      method: 'POST',
-      body: JSON.stringify({
-        pSQL: SQL_TRANSPORTADORA,
-        pPar: [],
-      }),
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
-  if (response.body.StatusCode !== 200) {
+  if (response.body!.StatusCode !== 200) {
     return {
       value: undefined,
       error: {
-        code: String(response.body.StatusCode),
-        message: String(response.body.StatusMessage),
+        code: String(response.body!.StatusCode),
+        message: String(response.body!.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body.Data,
+    value: response.body!.Data,
     error: undefined,
   };
 }

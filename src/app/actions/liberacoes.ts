@@ -88,7 +88,7 @@ async function CreateQueryParams(
   });
 
   // 3. Adiciona filtros fixos (VENDEDOR e DATA)
-  const VendedorLocal: string = await getCookie('user');
+  const VendedorLocal: string = await getCookie('user_b2b');
 
   let dateFilter = '';
   dateFilter = `DATA_HORA ge ${dayjs()
@@ -189,7 +189,7 @@ export async function LoadLiberacao(
   filter?: iFilter<iLiberacoes> | null | undefined,
 ): Promise<ResponseType<iDataResultTable<iLiberacoes>>> {
   const tokenCookie = await getCookie('token');
-  const VendedorLocal: string = await getCookie('user');
+  const VendedorLocal: string = await getCookie('user_b2b');
 
   const FILTER = filter
     ? await CreateQueryParams(filter)

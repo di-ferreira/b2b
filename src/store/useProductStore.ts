@@ -96,7 +96,7 @@ const useProductStore = create<ProductStore>((set, get) => ({
         { key: 'ATIVO', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
       ],
     });
-    console.log('response =>', response);
+
     const list = response.value?.value || [];
     set({ searchResult: list, isLoading: false });
     return list;
@@ -114,11 +114,17 @@ const useProductStore = create<ProductStore>((set, get) => ({
       GetNewPriceFromTable(prod, cliente.Tabela),
     ]);
 
+    console.log('useProductStore selectProduct promo', promo);
+    console.log(
+      'useProductStore selectProduct tablePriceResult',
+      tablePriceResult,
+    );
     let price = promo.value
       ? promo.value.OFERTA
       : tablePriceResult.value || prod.PRECO;
     let isOferta = !!promo.value;
 
+    console.log('useProductStore selectProduct cache', cache);
     if (cache) {
       set({
         history: cache.history,
@@ -134,6 +140,8 @@ const useProductStore = create<ProductStore>((set, get) => ({
       GetSaleHistory(cliente, prod),
       GetSimilares(prod.PRODUTO),
     ]);
+    console.log('useProductStore selectProduct historyRes', historyRes);
+    console.log('useProductStore selectProduct simsRes', simsRes);
 
     let similaresFiltrados: iListaSimilare[] = [];
     if (simsRes.value !== undefined && simsRes.value !== null) {

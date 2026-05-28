@@ -41,3 +41,7 @@ public/banners/01.png
 public/banners/02.png
 public/banners/03.webp
 .yarnrc.yml
+.pnp.cjs
+.pnp.loader.mjs
+
+/.yarn

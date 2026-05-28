@@ -86,7 +86,7 @@ export async function GetOrcamentosFromVendedor(
 ): Promise<ResponseType<iDataResultTable<iOrcamento>>> {
   const VendedorLocal: string = await getCookie('user');
   const Vendedor: iVendedor = (await getVendedorAction()).value!;
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
   const OrcamentoMetadata = {
     ORCAMENTO: 'number' as const,
     VENDEDOR: 'number' as const,
@@ -210,7 +210,7 @@ export async function GetOrcamentosFromVendedor(
 export async function GetOrcamento(
   OrcamentoNumber: string | number,
 ): Promise<ResponseType<iOrcamento>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iOrcamento>(
     `${ROUTE_GET_ALL_ORCAMENTO}(${OrcamentoNumber})?$expand=VENDEDOR,CLIENTE,
@@ -306,7 +306,7 @@ export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
 }
 
 export async function UpdateOrcamento(orcamento: iOrcamento) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const responseInsert = await CustomFetch<iOrcamento>(
     `/Orcamento(${orcamento.ORCAMENTO})`,
@@ -352,7 +352,7 @@ export async function UpdateOrcamento(orcamento: iOrcamento) {
 }
 
 export async function RemoverOrcamento(orcamento: iOrcamento) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
   for (const item of orcamento.ItensOrcamento) {
     const result = await removeItem({
       pIdOrcamento: orcamento.ORCAMENTO,
@@ -397,7 +397,7 @@ export async function RemoverOrcamento(orcamento: iOrcamento) {
 export async function removeItem(
   itemOrcamento: iItemRemove,
 ): Promise<ResponseType<iOrcamento>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const data = await CustomFetch<iApiResult<iOrcamento>>(
     ROUTE_REMOVE_ITEM_ORCAMENTO,
@@ -442,7 +442,7 @@ export async function removeItem(
 }
 
 export async function addItem(itemOrcamento: iItemInserir) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
   const res = await CustomFetch<iApiResult<iOrcamento>>(
     ROUTE_SAVE_ITEM_ORCAMENTO,
     {
@@ -484,7 +484,7 @@ export async function addItem(itemOrcamento: iItemInserir) {
 }
 
 export async function updateItem(itemOrcamento: iItemInserir) {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const removeResult = await CustomFetch<iApiResult<iOrcamento>>(
     ROUTE_REMOVE_ITEM_ORCAMENTO,

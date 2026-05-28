@@ -19,25 +19,8 @@ interface iReqSuperBusca {
   PularRegistros?: number;
   QuantidadeRegistros?: number;
 }
-const SQL_NEW_PRICE_FROM_TABLE = `select 
-                                  E.PRODUTO,
-                                  E.PRECO, cast(E.PRECO * ((T.PERCENTUAL / 100) + 1) as numeric(10,2)) as NOVO_PRECO
-                                  from EST E
-                                  join TAB T on (T.TABELA = :TABELA)
-                                  where E.PRODUTO = :PRODUTO `;
-
-const SQL_PRODUCTS_PROMOTION = `select  E.PRODUTO,
-                                        E.REFERENCIA,
-                                        e.nome,
-                                        e.preco,
-                                        e.qtdatual,
-                                        P.valor as OFERTA,
-                                        p.validade
-                                from EST E
-                                join promocao p on (p.produto = e.produto)
-                                where p.validade >= 'TODAY' and
-                                e.produto = :PRODUTO
-                                order by 6`;
+const SQL_NEW_PRICE_FROM_TABLE = (produto: string, tabela: string) =>
+  `select E.PRODUTO, E.PRECO, cast(E.PRECO * ((T.PERCENTUAL / 100) + 1) as numeric(10,2)) as NOVO_PRECO from EST E join TAB T on (T.TABELA = '${tabela}') where E.PRODUTO = '${produto}' `;
 
 const SQL_MWM =
   "select TRIM(T.TABELA) AS TABELA, CAST((E.fab_bruto - ((E.fab_bruto*T.PERCENTUAL)/100)) AS NUMERIC(10,2)) AS NOVO_PRECO, T.bloqueada AS BLOQUEADO from tabela_mwm T, EST E WHERE E.PRODUTO=:PRODUTO AND TRIM(T.TABELA) <> '%%'";
@@ -50,6 +33,8 @@ const SQL_2D =
 const ROUTE_SUPER_BUSCA = '/ServiceProdutos/SuperBusca';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const ROUTE_ESTOQUE_LOJAS = '/EstoqueFiliais';
+const SQL_PRODUCTS_PROMOTION = (produto: string) =>
+  `select  E.PRODUTO, E.REFERENCIA, e.nome, e.preco, e.qtdatual, P.valor as OFERTA, p.validade from EST E join promocao p on (p.produto = e.produto) where p.validade >= 'TODAY' and e.produto = '${produto}' order by 6`;
 
 const ROUTE_GET_ALL_PRODUTO = '/Produto';
 const ROUTE_GET_ALL_SIMILARES = '/Similares';
@@ -95,7 +80,7 @@ function ReturnFilterQuery(typeSearch: iFilterQuery<iProduto>): string {
 
     case 'like':
       return `${typeSearch.key} like '%${String(
-        typeSearch.value
+        typeSearch.value,
       ).toUpperCase()}%'`;
 
     case 'eq':
@@ -106,7 +91,7 @@ function ReturnFilterQuery(typeSearch: iFilterQuery<iProduto>): string {
 
     default:
       return `${typeSearch.key} like '%${String(
-        typeSearch.value
+        typeSearch.value,
       ).toUpperCase()}%' `;
     // default:
     //   return `contains(${typeSearch.key}, '${String(
@@ -116,7 +101,6 @@ function ReturnFilterQuery(typeSearch: iFilterQuery<iProduto>): string {
 }
 
 async function CreateQueryParams(filter: iFilter<iProduto>): Promise<string> {
-  // Campos que são considerados "campos de busca textual" (para OR)
   const searchFields: (keyof iProduto)[] = [
     'PRODUTO',
     'REFERENCIA',
@@ -126,69 +110,78 @@ async function CreateQueryParams(filter: iFilter<iProduto>): Promise<string> {
     'REFERENCIA2',
   ];
 
-  // Separa os filtros em dois grupos
-  const likeFilters: iFilterQuery<iProduto>[] = [];
-  const otherFilters: iFilterQuery<iProduto>[] = [];
+  const conditions: string[] = [];
+  const groups: Record<string, string[]> = {};
+  const ungroupedConditions: string[] = [];
 
+  // 1. Processamento dos filtros
   filter.filter?.forEach((item) => {
+    const query = ReturnFilterQuery(item);
+    if (!query) return;
+
+    // Se for um campo de busca textual (LIKE), forçamos o grupo 'textSearch'
     if (item.typeSearch === 'like' && searchFields.includes(item.key)) {
-      likeFilters.push(item);
-    } else {
-      otherFilters.push(item);
+      const groupName = 'textSearch';
+      groups[groupName] = groups[groupName] || [];
+      groups[groupName].push(query);
+    }
+    // Se tiver groupOperator, agrupa dinamicamente
+    else if (item.groupOperator) {
+      const groupName = `group_${item.groupOperator}`; // ou use a própria key se quiser grupos por campo
+      groups[groupName] = groups[groupName] || [];
+      groups[groupName].push(query);
+    }
+    // Filtros comuns
+    else {
+      ungroupedConditions.push(query);
     }
   });
 
-  const conditions: string[] = [];
-
-  // 1. Agrupa todos os filtros LIKE em um único OR entre os campos de busca
-  if (likeFilters.length > 0) {
-    const likeConditions = likeFilters.map(ReturnFilterQuery).filter(Boolean);
-    if (likeConditions.length > 0) {
-      conditions.push(`(${encodeURIComponent(likeConditions.join(' or '))})`);
+  // 2. Monta as strings dos grupos (ex: (A or B))
+  Object.keys(groups).forEach((groupName) => {
+    const groupItems = groups[groupName];
+    if (groupItems.length > 0) {
+      // Determina o operador interno do grupo
+      // Se o nome do grupo contiver 'or' ou for a busca textual, usamos 'or'
+      const operator =
+        groupName.includes('or') || groupName === 'textSearch'
+          ? ' or '
+          : ' and ';
+      conditions.push(`(${groupItems.join(operator)})`);
     }
-  }
+  });
 
-  // 2. Adiciona os demais filtros (eq, ne, gt, etc.) como AND soltos
-  const otherConditions = otherFilters.map(ReturnFilterQuery).filter(Boolean);
-  conditions.push(...otherConditions);
+  // 3. Adiciona os filtros soltos
+  conditions.push(...ungroupedConditions);
 
-  // 3. Filtros fixos (ATIVO e DATA_ATUALIZACAO) — evita duplicação
-  const VendedorLocal: string = await getCookie('user_b2b');
-
-  // Evita duplicação de ATIVO eq 'S'
+  // 4. Regras de negócio fixas (ATIVO)
   const hasAtivoFilter = filter.filter?.some(
-    (f) => f.key === 'ATIVO' && f.typeSearch === 'eq' && f.value === 'S'
+    (f) => f.key === 'ATIVO' && f.typeSearch === 'eq' && f.value === 'S',
   );
   if (!hasAtivoFilter) {
     conditions.push(`ATIVO eq 'S'`);
   }
 
-  // Filtro fixo: atualização nos últimos 7 dias
-  // const sevenDaysAgo = dayjs().subtract(7, 'day').format('YYYY-MM-DD');
-  // conditions.push(`DATA_ATUALIZACAO ge ${sevenDaysAgo}`);
-
-  // 4. Monta a string final de filtros
+  // 5. Montagem da URL (Codificando apenas o conteúdo dos parâmetros)
   const filterString = conditions.length
-    ? `$filter=${conditions.join(' and ')}`
+    ? `$filter=${encodeURIComponent(conditions.join(' and '))}` // Codifica apenas os filtros
     : '';
 
-  // 5. Parâmetros de paginação e ordenação
   const ResultTop = filter.top ? `&$top=${filter.top}` : '&$top=15';
   const ResultSkip = filter.skip ? `&$skip=${filter.skip}` : '&$skip=0';
   const ResultOrderBy = filter.orderBy
-    ? `&$orderby=${filter.orderBy}`
+    ? `&$orderby=${encodeURIComponent(filter.orderBy)}` // Protege contra espaços do 'asc/desc'
     : '&$orderby=PRODUTO asc';
 
-  // 6. Expansões específicas para iProduto
-  // const expand = `&$expand=FABRICANTE,FORNECEDOR,GRUPO,ListaChaves,ListaSimilares,ListaSimilares/PRODUTO,ListaSimilares/EXTERNO`;
+  // O expand pode ficar puro se não tiver caracteres especiais, mas mapear os nomes limpos é seguro
   const expand = `&$expand=FABRICANTE,FORNECEDOR,GRUPO,ListaChaves`;
 
-  // 7. Monta URL final
+  // RETORNE A STRING COM OS CARACTERES '?' E '&' NATIVOS, SEM ENCODE NA STRING TODA
   return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}${expand}&$inlinecount=allpages`;
 }
 
 export async function SuperFindProducts(
-  filter: iFilter<iProduto>
+  filter: iFilter<iProduto>,
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
   const tokenCookie = await getCookie('token_b2b');
   const bodyReq: iReqSuperBusca = {
@@ -225,11 +218,11 @@ export async function SuperFindProducts(
 }
 
 export async function GetProducts(
-  filter: iFilter<iProduto>
+  filter: iFilter<iProduto>,
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
   const tokenCookie = await getCookie('token_b2b');
   const url: string = `${ROUTE_GET_ALL_PRODUTO}${await CreateQueryParams(
-    filter
+    filter,
   )}`;
 
   const res = await CustomFetch<{ '@xdata.count': number; value: iProduto[] }>(
@@ -240,7 +233,7 @@ export async function GetProducts(
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (res.status !== 200) {
@@ -274,7 +267,7 @@ export async function GetProduct(productCode: string) {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (res.status !== 200) {
@@ -294,7 +287,7 @@ export async function GetProduct(productCode: string) {
 }
 
 export async function TableFromProduct(
-  product: iProduto
+  product: iProduto,
 ): Promise<ResponseType<iTabelaVenda[]>> {
   const tokenCookie = await getCookie('token_b2b');
   let tabelas: iTabelaVenda[] = [];
@@ -359,29 +352,14 @@ export async function TableFromProduct(
 
 export async function GetNewPriceFromTable(
   product: iProduto,
-  table: string
+  table: string,
 ): Promise<ResponseType<number>> {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_NEW_PRICE_FROM_TABLE,
-    pPar: [
-      {
-        ParamName: 'PRODUTO',
-        ParamType: 'ftString',
-        ParamValues: [product.PRODUTO],
-      },
-      {
-        ParamName: 'TABELA',
-        ParamType: 'ftString',
-        ParamValues: [table],
-      },
-    ],
-  });
+  const sql: string = SQL_NEW_PRICE_FROM_TABLE(product.PRODUTO, table);
 
-  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
-    method: 'POST',
-    body: body,
+  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
@@ -415,30 +393,19 @@ export async function GetNewPriceFromTable(
 }
 
 export async function GetProductPromotion(
-  product: iProduto
+  product: iProduto,
 ): Promise<ResponseType<iProductPromotion>> {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_PRODUCTS_PROMOTION,
-    pPar: [
-      {
-        ParamName: 'PRODUTO',
-        ParamType: 'ftString',
-        ParamValues: [product.PRODUTO],
-      },
-    ],
-  });
+  const sql: string = SQL_PRODUCTS_PROMOTION(product.PRODUTO);
 
-  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
-    method: 'POST',
-    body: body,
+  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
     },
   });
-
   if (res.body.Data === null) {
     return {
       value: undefined,
@@ -457,7 +424,7 @@ export async function GetProductPromotion(
 
 export async function GetSaleHistory(
   customer: iCliente,
-  product: iProduto
+  product: iProduto,
 ): Promise<ResponseType<iSaleHistory[]>> {
   const tokenCookie = await getCookie('token_b2b');
 
@@ -469,7 +436,7 @@ export async function GetSaleHistory(
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (res.status !== 200) {
@@ -500,7 +467,7 @@ export async function GetSimilares(productCode: string) {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
       },
-    }
+    },
   );
 
   if (res.status !== 200) {

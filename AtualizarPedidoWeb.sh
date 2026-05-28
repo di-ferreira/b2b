@@ -8,10 +8,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
-echo "==> Executando yarn build..."
-yarn build
+echo "==> Executando npm run build..."
+npm run build
 if [ $? -ne 0 ]; then
-  echo "Erro ao executar yarn build. Verifique os logs acima."
+  echo "Erro ao executar npm run build. Verifique os logs acima."
   read -p "Pressione enter para continuar..."
   exit 1
 fi

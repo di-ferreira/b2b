@@ -1,4 +1,5 @@
 'use client';
+import { iCliente } from '@/@types/Cliente';
 import {
   iCondicaoPgto,
   iFormaPgto,
@@ -6,13 +7,14 @@ import {
   iParcelasPgto,
   iPreVenda,
 } from '@/@types/PreVenda';
+import { iVendedor } from '@/@types/Vendedor';
 import {
   GetCondicaoPGTO,
   GetFormasPGTO,
   SavePreVenda,
 } from '@/app/actions/preVenda';
 import { cn } from '@/lib/utils';
-import useOrcamento from '@/store/orcamentoStore';
+import useBudget from '@/store/BudgetStore';
 import {
   faFileInvoiceDollar,
   faTimes,
@@ -43,7 +45,7 @@ interface iTipoEntrega {
 }
 
 const FormEditPreSale = () => {
-  const { current } = useOrcamento();
+  const { current } = useBudget();
   const router = useRouter();
   const [CondicaoPgto, setCondicaoPgto] = useState<iCondicaoPgto[]>([]);
   const [CondicaoPgtoSelected, setCondicaoPgtoSelected] =
@@ -82,15 +84,15 @@ const FormEditPreSale = () => {
     },
   ]);
   const [TipoEntregaSelected, setTipoEntregaSelected] = useState<iTipoEntrega>(
-    TipoEntrega[0]
+    TipoEntrega[0],
   );
 
   const [IsDelivery, setIsDelivery] = useState<boolean>(false);
 
   const [preSale, setPreSale] = useState<iPreVenda>({
-    CodigoCliente: current.CLIENTE.CLIENTE,
+    CodigoCliente: (current.CLIENTE as iCliente).CLIENTE,
     CodigoCondicaoPagamento: 0,
-    CodigoVendedor1: current.VENDEDOR.VENDEDOR,
+    CodigoVendedor1: (current.VENDEDOR as iVendedor).VENDEDOR,
     DataPedido: dayjs().format('YYYY-MM-DD').toString(),
     ModeloNota: '55',
     Itens: [],
@@ -111,29 +113,30 @@ const FormEditPreSale = () => {
 
   function getCondicao() {
     if (current.TOTAL > 0) {
-      GetCondicaoPGTO(current ? current.TOTAL : 0, current.CLIENTE.Tabela).then(
-        (condicao) => {
-          if (condicao.value === null) {
-            toast('não há condições para o total do orçamento!', {
-              position: 'bottom-right',
-              autoClose: 5000,
-              hideProgressBar: false,
-              closeOnClick: false,
-              pauseOnHover: true,
-              draggable: true,
-              progress: undefined,
-              theme: 'colored',
-              type: 'error',
-              transition: Flip,
-            });
-          }
-          if (condicao.value) {
-            setCondicaoPgto(condicao.value);
-            setCondicaoPgtoSelected(condicao.value[0]);
-            parcelasList(condicao.value[0]);
-          }
+      GetCondicaoPGTO(
+        current ? current.TOTAL : 0,
+        (current.CLIENTE as iCliente).Tabela,
+      ).then((condicao) => {
+        if (condicao.value === null) {
+          toast('não há condições para o total do orçamento!', {
+            position: 'bottom-right',
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: false,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: 'colored',
+            type: 'error',
+            transition: Flip,
+          });
         }
-      );
+        if (condicao.value) {
+          setCondicaoPgto(condicao.value);
+          setCondicaoPgtoSelected(condicao.value[0]);
+          parcelasList(condicao.value[0]);
+        }
+      });
     }
   }
 
@@ -276,12 +279,12 @@ const FormEditPreSale = () => {
                     value={String(CondicaoPgtoSelected.ID)}
                     onValueChange={(e: any) => {
                       const selectedCondicao = CondicaoPgto.find(
-                        (cp) => cp.NOME === e
+                        (cp) => cp.NOME === e,
                       );
                       if (selectedCondicao) {
                         parcelasList(selectedCondicao);
                         setCondicaoPgtoSelected(
-                          (old) => (old = selectedCondicao)
+                          (old) => (old = selectedCondicao),
                         );
                       }
                     }}
@@ -311,7 +314,7 @@ const FormEditPreSale = () => {
                     value={String(FormaPgtoSelected?.CARTAO)}
                     onValueChange={(e: any) => {
                       const selectedForma = FormaPgto.find(
-                        (cp) => cp.CARTAO === e
+                        (cp) => cp.CARTAO === e,
                       );
                       if (selectedForma) {
                         setFormaPgtoSelected((old) => (old = selectedForma));
@@ -342,7 +345,7 @@ const FormEditPreSale = () => {
                   onChange={(e) =>
                     setPreSale(
                       (old) =>
-                        (old = { ...preSale, ObsPedido1: e.target.value })
+                        (old = { ...preSale, ObsPedido1: e.target.value }),
                     )
                   }
                   labelText='OBS PEDIDO'
@@ -407,7 +410,7 @@ const FormEditPreSale = () => {
                 onChange={(e) =>
                   setPreSale(
                     (old) =>
-                      (old = { ...preSale, ObsNotaFiscal: e.target.value })
+                      (old = { ...preSale, ObsNotaFiscal: e.target.value }),
                   )
                 }
                 labelText='OBS NOTA FISCAL'

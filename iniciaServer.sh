@@ -7,8 +7,8 @@ cd "/c/b2b-emsoft" || {
   exit 1
 }
 
-echo "==> Iniciando o servidor com yarn start..."
-yarn start
+echo "==> Iniciando o servidor com npm run start..."
+npm run start
 if [ $? -ne 0 ]; then
   echo "Erro ao iniciar o servidor. Verifique os logs acima."
   read -p "Pressione Enter para sair..."

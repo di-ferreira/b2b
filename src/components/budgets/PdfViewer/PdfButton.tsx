@@ -1,5 +1,7 @@
 'use client';
+import { iCliente } from '@/@types/Cliente';
 import { iOrcamento } from '@/@types/Orcamento';
+import { iVendedor } from '@/@types/Vendedor';
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import React, { useRef } from 'react';
@@ -7,11 +9,11 @@ import LogoAutoSul from '../../../../public/LogoAutosul.png';
 
 const OpenPDF = dynamic(
   () => import('./PdfViewer').then((mod) => mod.OpenPDF),
-  { ssr: false }
+  { ssr: false },
 );
 const DownloadPDF = dynamic(
   () => import('./PdfViewer').then((mod) => mod.DownloadPDF),
-  { ssr: false }
+  { ssr: false },
 );
 
 interface iGeneratePDF {
@@ -52,14 +54,14 @@ const GeneratePDF: React.FC<iGeneratePDF> = ({ orc }) => {
               <div className='flex gap-x-1'>
                 <p className='capitalize'>cliente:</p>
                 <p className='w-[85%] text-gray-900 border-b-[1px] border-solid border-black pl-1 pr-4 text-ellipsis font-bold pb-1'>
-                  {orc.CLIENTE.NOME}
+                  {(orc.CLIENTE as iCliente).NOME}
                 </p>
               </div>
 
               <div className='flex gap-x-1'>
                 <p className='capitalize'>vendedor:</p>
                 <p className='w-[85%] text-gray-900 border-b-[1px] border-solid border-black pl-1 pr-4 text-ellipsis font-bold pb-1'>
-                  {orc.VENDEDOR.NOME}
+                  {(orc.VENDEDOR as iVendedor).NOME}
                 </p>
               </div>
 

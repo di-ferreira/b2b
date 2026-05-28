@@ -1,5 +1,7 @@
 'use client';
+import { iCliente } from '@/@types/Cliente';
 import { iOrcamento } from '@/@types/Orcamento';
+import { iVendedor } from '@/@types/Vendedor';
 import { Button } from '@/components/ui/button';
 import { faEye, faSave } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -34,7 +36,7 @@ function PdfDocument({ orc }: PdfViewerProps) {
         <View style={[styles.header, styles.default]}>
           <View style={styles.logo}>
             <Image
-              src={`${window.location.protocol}//${window.location.host}/LogoAutosul.png`}
+              src={`${window.location.protocol}//${window.location.host}/logo_15_novembro.jpeg`}
             />
           </View>
 
@@ -47,14 +49,14 @@ function PdfDocument({ orc }: PdfViewerProps) {
             <View style={styles.headerParagraph}>
               <Text style={styles.headerParagraphTitle}>cliente:</Text>
               <Text style={styles.headerParagraphValue}>
-                {orc.CLIENTE.NOME}
+                {(orc.CLIENTE as iCliente).NOME}
               </Text>
             </View>
 
             <View style={styles.headerParagraph}>
               <Text style={styles.headerParagraphTitle}>vendedor:</Text>
               <Text style={styles.headerParagraphValue}>
-                {orc.VENDEDOR.NOME}
+                {(orc.VENDEDOR as iVendedor).NOME}
               </Text>
             </View>
 
@@ -216,7 +218,7 @@ export function DownloadPDF({ orc }: PdfViewerProps) {
     const blob = await pdf(<PdfDocument orc={orc} />).toBlob();
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `orcamento-${orc.ORCAMENTO}-${orc.CLIENTE.NOME}.pdf`;
+    link.download = `orcamento-${orc.ORCAMENTO}-${(orc.CLIENTE as iCliente).NOME}.pdf`;
     link.click();
   };
 

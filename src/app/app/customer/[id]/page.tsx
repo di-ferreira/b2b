@@ -182,11 +182,7 @@ function Customers({ params }: iCustomerPage) {
         }
       }
 
-      await newBudget({
-        ...NewAddOrcamento,
-        CLIENTE: Customer!,
-        TABELA: Customer!.Tabela,
-      });
+      await newBudget();
 
       current && router.push(`/app/budgets/${current.ORCAMENTO}`);
 

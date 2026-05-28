@@ -36,6 +36,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 yarn.lock
+package-lock.json
 dist
 public/banners/01.png
 public/banners/02.png

@@ -179,11 +179,9 @@ function Customers({ params }: iCustomerPage) {
 
       if (orcamento.ORCAMENTO > 0) {
         orcamentoID = orcamento.ORCAMENTO;
-        console.log('orcamentoID: ', orcamentoID);
       } else {
         await newBudget();
         orcamentoID = current.ORCAMENTO;
-        console.log('orcamentoID newBudget: ', orcamentoID);
       }
 
       error &&

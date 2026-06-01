@@ -131,7 +131,7 @@ export async function CreateLiberacao(
       },
     },
   );
-  console.log('CreateLiberacao response', response);
+
   if (response.status !== 201) {
     return {
       value: undefined,
@@ -167,7 +167,6 @@ export async function UpdateLiberacao(
       },
     },
   );
-  console.log('UpdateLiberacao response', response);
 
   if (response.status !== 200) {
     return {
@@ -278,8 +277,6 @@ export async function Liberacoes(
   const responseBusca = await LoadLiberacaoCliente(param.CHAVE, param.CODIGO);
   const liberacaoExistente = responseBusca.value;
 
-  console.log('responseBusca liberacaoExistente', liberacaoExistente);
-
   const dadosNovaLiberacao: iLiberacoes = {
     ...param,
     ID: 0,
@@ -298,7 +295,6 @@ export async function Liberacoes(
       value: (await CreateLiberacao(dadosNovaLiberacao)).value!,
       error: undefined,
     };
-  console.log('responseBusca resultLiberacao1', resultLiberacao);
 
   if (liberacaoExistente !== undefined) {
     if (liberacaoExistente.ID_ONDE === 9999) {
@@ -314,14 +310,12 @@ export async function Liberacoes(
         error: undefined,
       };
     }
-    console.log('responseBusca resultLiberacao2', resultLiberacao);
 
     if (liberacaoExistente.USADO === 'S') {
       resultLiberacao = {
         value: (await CreateLiberacao(dadosNovaLiberacao)).value!,
         error: undefined,
       };
-      console.log('responseBusca resultLiberacao3', resultLiberacao);
     } else {
       const updateLiberacao = await UpdateLiberacao({
         ...liberacaoExistente,
@@ -329,12 +323,11 @@ export async function Liberacoes(
         DATA_HORA: agora,
         ONDE: param.ONDE,
       });
-      console.log('responseBusca updateLiberacao', updateLiberacao);
+
       resultLiberacao = {
         value: updateLiberacao.value!,
         error: undefined,
       };
-      console.log('responseBusca resultLiberacao4', resultLiberacao);
     }
   }
   return resultLiberacao;

@@ -113,8 +113,6 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
     ? await CreateFilter(filter)
     : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'PRE-VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=MOVIMENTO desc,DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
 
-  console.log('GetPreVendas FILTER', FILTER);
-
   const response = await CustomFetch<{
     '@xdata.count': number;
     value: iMovimento[];
@@ -125,7 +123,6 @@ export async function GetPreVendas(filter: iFilter<iMovimento>) {
       Authorization: `bearer ${tokenCookie}`,
     },
   });
-  console.log('GetPreVendas response', response);
 
   const result: iDataResultTable<iMovimento> = {
     Qtd_Registros: response.body!['@xdata.count'],

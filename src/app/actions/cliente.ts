@@ -347,14 +347,6 @@ export async function GetFinanceiroCliente(
     const pgtoEmAberto =
       emAberto.value?.filter((aberto: iCredito) => aberto.RESTA > 0) ?? [];
 
-    console.log('getfinanceirocliente ', {
-      customer,
-      emAtrazo,
-      emAberto,
-      naoVencidas,
-      pgtoEmAberto,
-    });
-
     const now = dayjs();
 
     emAbertoTotal =
@@ -401,7 +393,6 @@ export async function GetFinanceiroCliente(
       error: undefined,
     };
   } catch (err: any) {
-    console.error('err', err);
     return {
       value: undefined,
       error: err.message,

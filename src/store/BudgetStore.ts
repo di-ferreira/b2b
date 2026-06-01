@@ -24,6 +24,7 @@ const useBudget = create<BudgetStore>((set) => ({
     set({ isLoading: true, error: null });
     try {
       const result = await NewOrcamento();
+
       if (result.error) {
         throw new Error(result.error.message);
       }

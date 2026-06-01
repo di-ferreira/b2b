@@ -118,7 +118,7 @@ async function CreateQueryParams(
 export async function CreateLiberacao(
   liberacao: iLiberacoes,
 ): Promise<ResponseType<iLiberacoes>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResultBody<iLiberacoes>>(
     `${ROUTE_GET_ALL_LIBERACOES}`,

@@ -2,13 +2,13 @@
 import { iCredito } from '@/@types';
 import { iCliente, iFinanceiroCliente } from '@/@types/Cliente';
 import { iOrcamento } from '@/@types/Orcamento';
-import { iVendedor } from '@/@types/Vendedor';
 import { GetCliente, GetFinanceiroCliente } from '@/app/actions/cliente';
 import {
   MarcarLiberacaoComoUsada,
   SolicitarLiberacao,
   ValidarLiberacao,
 } from '@/app/actions/liberacoes';
+import { LoadOrcamento } from '@/app/actions/orcamento';
 
 import ToastNotify from '@/components/ToastNotify';
 import { Button } from '@/components/ui/button';
@@ -62,15 +62,6 @@ function Customers({ params }: iCustomerPage) {
   );
 
   if (!Customer) return <p>Failed to load customer.</p>;
-
-  const NewAddOrcamento: iOrcamento = {
-    ORCAMENTO: 0,
-    TOTAL: 0.0,
-    CLIENTE: {} as iCliente,
-    VENDEDOR: {} as iVendedor,
-    COM_FRETE: 'N',
-    ItensOrcamento: [],
-  };
 
   function parseCurrency(currency: number) {
     return currency.toLocaleString('pt-br', {
@@ -131,11 +122,14 @@ function Customers({ params }: iCustomerPage) {
   }
 
   async function GerarOrcamento() {
+    let orcamentoID: number = 0;
     try {
       const bloqueios: string[] = [];
 
       if (ContasAtrazadas > 0) bloqueios.push('INADIMPLENCIA');
+
       if (LimiteCredito <= 0) bloqueios.push('LIMITE');
+
       if (Customer.BLOQUEADO === 'S') bloqueios.push('BLOQUEADO');
 
       for (const codigo of bloqueios) {
@@ -181,10 +175,16 @@ function Customers({ params }: iCustomerPage) {
           await MarcarLiberacaoComoUsada(liberacao);
         }
       }
+      let orcamento: iOrcamento = (await LoadOrcamento()).value!;
 
-      await newBudget();
-
-      current && router.push(`/app/budgets/${current.ORCAMENTO}`);
+      if (orcamento.ORCAMENTO > 0) {
+        orcamentoID = orcamento.ORCAMENTO;
+        console.log('orcamentoID: ', orcamentoID);
+      } else {
+        await newBudget();
+        orcamentoID = current.ORCAMENTO;
+        console.log('orcamentoID newBudget: ', orcamentoID);
+      }
 
       error &&
         ToastNotify({
@@ -196,17 +196,19 @@ function Customers({ params }: iCustomerPage) {
         message: err.message,
         type: 'error',
       });
+    } finally {
+      if (orcamentoID > 0) {
+        router.push(`/app/cart`);
+      }
     }
   }
   // Carrega o item quando o componente monta ou o 'item' prop muda
   const loadData = async () => {
     try {
       const id = Number(params.id);
-      console.log('load data param', id);
+
       const customer = await GetCliente(id);
       const resultFinanceiro = await GetFinanceiroCliente(id);
-      console.log('load data resultFinanceiro', resultFinanceiro);
-      console.log('load data customer', customer);
 
       if (resultFinanceiro.error !== undefined) {
         throw new Error(resultFinanceiro.error.message);

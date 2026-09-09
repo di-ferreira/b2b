@@ -191,30 +191,38 @@ export async function GetCliente(
 export async function GetPGTOsAtrazados(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_PGTO_ATRAZO,
-    pPar: [
-      {
-        ParamName: 'DATA',
-        ParamType: 'ftString',
-        ParamValues: [dayjs().format('YYYY-MM-DD')],
-      },
-      {
-        ParamName: 'CLIENTE',
-        ParamType: 'ftInteger',
-        ParamValues: [cliente],
-      },
-    ],
-  } as iSelectSQL);
+  const pPar = JSON.stringify([
+    {
+      ParamName: 'DATA',
+      ParamType: 'ftString',
+      ParamValues: [dayjs().format('YYYY-MM-DD')],
+    },
+    {
+      ParamName: 'CLIENTE',
+      ParamType: 'ftInteger',
+      ParamValues: [cliente],
+    },
+  ]);
 
-  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
-    method: 'POST',
-    body: body,
+  const query = `?pSQL=${encodeURIComponent(SQL_PGTO_ATRAZO)}&pPar=${encodeURIComponent(pPar)}`;
+
+  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}${query}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
     },
   });
+
+  if (response.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.status),
+        message: String(response.statusText),
+      },
+    };
+  }
 
   if (response.body!.StatusCode !== 200) {
     return {
@@ -234,25 +242,23 @@ export async function GetPGTOsAtrazados(cliente: number) {
 export async function GetPGTOsNaoVencidos(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_PGTO_NAO_VENCIDAS,
-    pPar: [
-      {
-        ParamName: 'DATA',
-        ParamType: 'ftString',
-        ParamValues: [dayjs().format('YYYY-MM-DD')],
-      },
-      {
-        ParamName: 'CLIENTE',
-        ParamType: 'ftInteger',
-        ParamValues: [cliente],
-      },
-    ],
-  } as iSelectSQL);
+  const pPar = JSON.stringify([
+    {
+      ParamName: 'DATA',
+      ParamType: 'ftString',
+      ParamValues: [dayjs().format('YYYY-MM-DD')],
+    },
+    {
+      ParamName: 'CLIENTE',
+      ParamType: 'ftInteger',
+      ParamValues: [cliente],
+    },
+  ]);
 
-  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
-    method: 'POST',
-    body: body,
+  const query = `?pSQL=${encodeURIComponent(SQL_PGTO_NAO_VENCIDAS)}&pPar=${encodeURIComponent(pPar)}`;
+
+  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}${query}`, {
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
@@ -269,6 +275,16 @@ export async function GetPGTOsNaoVencidos(cliente: number) {
     };
   }
 
+  if (response.body!.StatusCode !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.body!.StatusCode),
+        message: String(response.body!.StatusMessage),
+      },
+    };
+  }
+
   return {
     value: response.body!,
     error: undefined,
@@ -278,22 +294,20 @@ export async function GetPGTOsNaoVencidos(cliente: number) {
 export async function GetPGTOsEmAberto(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_CONTAS_ABERTAS,
-    pPar: [
-      {
-        ParamName: 'CLIENTE',
-        ParamType: 'ftInteger',
-        ParamValues: [cliente],
-      },
-    ],
-  } as iSelectSQL);
+  const pPar = JSON.stringify([
+    {
+      ParamName: 'CLIENTE',
+      ParamType: 'ftInteger',
+      ParamValues: [cliente],
+    },
+  ]);
+
+  const query = `?pSQL=${encodeURIComponent(SQL_CONTAS_ABERTAS)}&pPar=${encodeURIComponent(pPar)}`;
 
   const response = await CustomFetch<ResponseSQL<iPgtoEmAberto[]>>(
-    `${ROUTE_SELECT_SQL}`,
+    `${ROUTE_SELECT_SQL}${query}`,
     {
-      method: 'POST',
-      body: body,
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
@@ -307,6 +321,16 @@ export async function GetPGTOsEmAberto(cliente: number) {
       error: {
         code: String(response.status),
         message: String(response.statusText),
+      },
+    };
+  }
+
+  if (response.body!.StatusCode !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.body!.StatusCode),
+        message: String(response.body!.StatusMessage),
       },
     };
   }
@@ -435,7 +459,10 @@ export async function GetFinanceiroCliente(
   } catch (err: any) {
     return {
       value: undefined,
-      error: err.message,
+      error: {
+        code: '500',
+        message: err?.message || String(err),
+      },
     };
   }
 }

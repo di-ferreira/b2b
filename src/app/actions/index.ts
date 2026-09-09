@@ -9,6 +9,7 @@ export async function setCookie(name: string, value: string): Promise<void> {
     name: name,
     value: value,
     httpOnly: true,
+    secure: process.env.COOKIE_SECURE === 'true',
     expires: returnExpiresTimes(120),
   });
 }

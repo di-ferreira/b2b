@@ -76,8 +76,8 @@
 
 ## Fase 5 — 🧪 Testes (infra já configurada: vitest + playwright)
 
-- [ ] **5.1 Login** — unit (`compareHash`) + integração (fluxo de autenticação)
-- [ ] **5.2 Fluxo de orçamento** — criação/edição
+- [x] **5.1 Login** — unit tests: password comparison (plain text), cookie setting, SENHA stripping
+- [ ] **5.2 Fluxo de orçamento** — criação/edição (e2e — requer servidor rodando)
 
 ## Fase 6 — 🏗️ Infra / deploy
 

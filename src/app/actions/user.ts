@@ -25,7 +25,7 @@ export async function LoginUser(
     return { error: cliente.error };
   }
 
-  const verifyPassword = compareHash(cliente.value.SENHA, user.password);
+  const verifyPassword = compareHash(user.password, cliente.value.SENHA);
 
   if (!verifyPassword)
     return {

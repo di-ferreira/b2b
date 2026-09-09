@@ -3,7 +3,7 @@ import { LoginUser } from '@/app/actions/user';
 import ToastNotify from '@/components/ToastNotify';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { generateHash, MaskCnpjCpf } from '@/lib/utils';
+import { MaskCnpjCpf } from '@/lib/utils';
 import useUser from '@/store';
 import {
   faLock,
@@ -44,11 +44,10 @@ export function AuthForm() {
   const formData = new FormData(e.currentTarget);
   const clienteCode = formData.get('cic');
   const vendedorPassword = String(formData.get('password'));
-  const vendedorPasswordHashed = generateHash(vendedorPassword);
 
   const login = await LoginUser({
     cliente: MaskCnpjCpf(String(clienteCode)),
-    password: vendedorPasswordHashed,
+    password: vendedorPassword,
   });
 
     if (login.value === undefined) {

@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+*.md
+src/__tests__
+vitest.config.ts
+vitest.setup.ts
+playwright.config.ts

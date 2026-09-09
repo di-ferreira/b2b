@@ -1,10 +1,11 @@
+'use client';
 import { iContas } from '@/@types/Contas';
 import { Button } from '@/components/ui/button';
 import { faFilePdf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Flip, toast } from 'react-toastify';
 
-export default async function ButtonBoleto(conta: { conta: iContas }) {
+export default function ButtonBoleto(conta: { conta: iContas }) {
   const handleDownload = async () => {
     let banco: string = conta.conta.EMISSAO_BOLETO || '';
 

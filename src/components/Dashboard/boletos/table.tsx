@@ -24,7 +24,12 @@ function DataTableBankSlip() {
         setData(res);
         setLoading(false);
       })
-      .catch((err) => {})
+      .catch((err) => {
+        console.error('Erro ao carregar Boletos:', err);
+        setData({
+          error: { code: '500', message: err?.message || String(err) },
+        });
+      })
       .finally(() => {
         setLoading(false);
       });

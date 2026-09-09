@@ -108,7 +108,7 @@ function DataTableProducts() {
         <DataTable
           columns={headers}
           TableData={data.value?.value!}
-          QuantityRegiters={data.value?.Qtd_Registros}
+          QuantityRegisters={data.value?.Qtd_Registros}
           onFetchPagination={handleProduct}
           IsLoading={loading}
         />

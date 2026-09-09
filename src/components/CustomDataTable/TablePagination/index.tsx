@@ -14,7 +14,7 @@ import {
 import { KEY_NAME_TABLE_PAGINATION } from '@/constants';
 import { loadStorage, saveStorage } from '@/lib/utils';
 interface iDataTablePagination<T> {
-  QuantityRegiters: number;
+  QuantityRegisters: number;
   OnFetchData: (filter: iFilter<T>) => void;
   rowsQtd: number;
 }
@@ -27,7 +27,7 @@ export type tpPaginationValues = {
 };
 
 export function TablePagination<T>({
-  QuantityRegiters,
+  QuantityRegisters,
   OnFetchData,
   rowsQtd,
 }: iDataTablePagination<T>) {
@@ -37,7 +37,7 @@ export function TablePagination<T>({
       CurrentPage: 1,
       RowsPerPage: RowsPerPageOptions[3],
       TotalPages: 0,
-      TotalRegisters: QuantityRegiters,
+      TotalRegisters: QuantityRegisters,
     });
 
   const SkipPage = (
@@ -132,8 +132,8 @@ export function TablePagination<T>({
         : {
             CurrentPage: 1,
             RowsPerPage: RowsPerPageOptions[0],
-            TotalPages: Math.ceil(QuantityRegiters / RowsPerPageOptions[0]),
-            TotalRegisters: QuantityRegiters,
+            TotalPages: Math.ceil(QuantityRegisters / RowsPerPageOptions[0]),
+            TotalRegisters: QuantityRegisters,
           };
 
     setPaginationOptions(

@@ -173,7 +173,7 @@ function DataTableCustomer() {
         <DataTable
           columns={headersFull}
           TableData={data.value?.value!}
-          QuantityRegiters={data.value?.Qtd_Registros}
+          QuantityRegisters={data.value?.Qtd_Registros}
           onFetchPagination={handleCustomer}
           IsLoading={loading}
         />

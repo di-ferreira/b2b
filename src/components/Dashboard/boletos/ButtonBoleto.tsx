@@ -2,6 +2,7 @@ import { iContas } from '@/@types/Contas';
 import { Button } from '@/components/ui/button';
 import { faFilePdf } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { Flip, toast } from 'react-toastify';
 
 export default async function ButtonBoleto(conta: { conta: iContas }) {
   const handleDownload = async () => {
@@ -29,7 +30,18 @@ export default async function ButtonBoleto(conta: { conta: iContas }) {
       window.URL.revokeObjectURL(url);
     } else {
       const data = await response.json();
-      alert(data.error); // ou use um toast, modal, etc.
+      toast(data.error, {
+        position: 'top-right',
+        autoClose: 5000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+        progress: undefined,
+        theme: 'light',
+        transition: Flip,
+        type: 'error',
+      });
     }
   };
 

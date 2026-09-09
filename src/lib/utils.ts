@@ -31,7 +31,7 @@ export function compareHash(password: string, hash: string): boolean {
 }
 
 export function MaskCnpjCpf(value: string | undefined): string {
-  let Result: String = '';
+  let Result: string = '';
   if (value !== undefined) {
     if (!value) Result = '';
 

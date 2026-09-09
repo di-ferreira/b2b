@@ -464,7 +464,7 @@ const SuperSearchProducts = ({ data, words, CallBack }: iProps) => {
               columns={tableHeaders}
               TableData={Products.value}
               IsLoading={loading}
-              QuantityRegiters={Products.Qtd_Registros}
+              QuantityRegisters={Products.Qtd_Registros}
               onFetchPagination={findProduct}
             />
           </Suspense>

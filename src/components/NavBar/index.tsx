@@ -2,8 +2,10 @@
 import { getCookie } from '@/app/actions';
 import {
   faCartShopping,
+  faClipboardList,
   faHomeAlt,
   faPowerOff,
+  faShoppingBag,
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
 import { useEffect, useState } from 'react';
@@ -16,6 +18,9 @@ const NavBar = () => {
   const linkList: iNavItem[] = [
     { icon: faHomeAlt, link: '/app/dashboard', text: 'Dashboard' },
     { icon: faUser, link: `/app/customer/${CodeUser}`, text: 'Dados Cliente' },
+    { icon: faShoppingBag, link: '/app/products', text: 'Produtos' },
+    { icon: faClipboardList, link: '/app/pre-sales', text: 'Pré-Vendas' },
+    { icon: faCartShopping, link: '/app/sales', text: 'Vendas' },
     { icon: faCartShopping, link: '/app/cart', text: 'Carrinho' },
     { icon: faPowerOff, link: '/app/logout', text: 'LogOut' },
   ];

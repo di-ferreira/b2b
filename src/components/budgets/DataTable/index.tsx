@@ -235,7 +235,7 @@ function DataTableBudget() {
         <DataTable
           columns={headers}
           TableData={data.value?.value!}
-          QuantityRegiters={data.value?.Qtd_Registros}
+          QuantityRegisters={data.value?.Qtd_Registros}
           onFetchPagination={handleBudgets}
           IsLoading={loading}
         />

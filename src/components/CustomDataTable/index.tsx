@@ -10,7 +10,7 @@ type iTableDataProps<T> = {
   ErrorMessage?: string;
   columns: iColumnType<T>[];
   TableData: T[];
-  QuantityRegiters?: number;
+  QuantityRegisters?: number;
   IsLoading: boolean;
   onFetchPagination?: (filter: iFilter<T>) => void;
 };
@@ -20,7 +20,7 @@ export function DataTable<T>({
   TableData,
   ErrorMessage,
   onFetchPagination,
-  QuantityRegiters,
+  QuantityRegisters,
   IsLoading,
 }: iTableDataProps<T>) {
   return (
@@ -49,11 +49,11 @@ export function DataTable<T>({
         {!IsLoading && <TableRow data={TableData} columns={columns} />}
       </tbody>
       {onFetchPagination &&
-        QuantityRegiters !== undefined &&
-        QuantityRegiters > 0 && (
+        QuantityRegisters !== undefined &&
+        QuantityRegisters > 0 && (
           <TablePagination
             OnFetchData={onFetchPagination}
-            QuantityRegiters={QuantityRegiters}
+            QuantityRegisters={QuantityRegisters}
             rowsQtd={columns.length}
           />
         )}

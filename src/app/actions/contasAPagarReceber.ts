@@ -120,59 +120,6 @@ async function CreateQueryParams(filter: iFilter<iContas>): Promise<string> {
   // return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}&$expand=VENDEDOR,CLIENTE,ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento,ItensOrcamento/PRODUTO&$inlinecount=allpages`;
 }
 
-export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
-  const tokenCookie = await getCookie('token_b2b');
-  const ClienteLocal: string = await getCookie('user_b2b');
-  const DataBusca: string = dayjs().format('YYYY-MM-DD');
-
-  const response = await CustomFetch<iApiResult<iOrcamento[]>>(
-    `${ROUTE_GET_ALL_CONTAS}?$filter=(PV eq 'N' or PV eq null) and DATA eq ${DataBusca} and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE,
-    ItensOrcamento/PRODUTO/FORNECEDOR,ItensOrcamento/PRODUTO/FABRICANTE,ItensOrcamento, ItensOrcamento/PRODUTO,ItensOrcamento/ORCAMENTO,
-    ItensOrcamento/PRODUTO/ListaChaves`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `bearer ${tokenCookie}`,
-      },
-    }
-  );
-
-  const result: iOrcamento = response.body.Data![0];
-
-  if (result === undefined) {
-    return {
-      value: undefined,
-      error: {
-        code: '404',
-        message: 'Not Found',
-      },
-    };
-  }
-
-  if (response.status !== 200) {
-    return {
-      value: undefined,
-      error: {
-        code: String(response.status),
-        message: String(response.statusText),
-      },
-    };
-  }
-
-  const itensOrcs: iItensOrcamento[] = result.ItensOrcamento.map((item) => {
-    return { ...item, ORCAMENTO: result.ORCAMENTO };
-  });
-
-  return {
-    value: {
-      ...result,
-      ItensOrcamento: itensOrcs,
-    },
-    error: undefined,
-  };
-}
-
 export async function GetContasAPagarFromCliente(
   filter: iFilter<iContas> | null | undefined
 ): Promise<ResponseType<iDataResultTable<iContas>>> {

@@ -1,7 +1,7 @@
 'use server';
 import { ResponseType, userLogin } from '@/@types';
 import { iCliente, iRegiao } from '@/@types/Cliente';
-import { compareHash, RemoveSpecialCharacter } from '@/lib/utils';
+import { RemoveSpecialCharacter } from '@/lib/utils';
 import { CustomFetch } from '@/services/api';
 import { getCookie, setCookie } from '.';
 
@@ -25,7 +25,7 @@ export async function LoginUser(
     return { error: cliente.error };
   }
 
-  const verifyPassword = compareHash(user.password, cliente.value.SENHA);
+  const verifyPassword = user.password === cliente.value.SENHA;
 
   if (!verifyPassword)
     return {

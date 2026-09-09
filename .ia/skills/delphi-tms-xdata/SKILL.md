@@ -205,3 +205,99 @@ globalmente (`TXDataModelBuilder`).
 - Endpoints sensíveis têm `[Authorize]`/`[AuthorizeScopes]` ou `[EntityAuthorize*]`,
   e há um `TJwtMiddleware` no servidor.
 - Em produção: HTTPS, e nunca segredo de JWT hardcoded em código versionado.
+
+## API EMAuto (consumo frontend B2B)
+
+Documentação específica da API EMAuto consumida pelo app B2B Next.js.
+
+### Endpoints
+
+- **Base URL**: `http://emsoft02.ddns.net:2002/emsoft/emauto`
+- **Swagger UI**: `http://emsoft02.ddns.net:2002/emsoft/emauto/swaggerui`
+- **OpenAPI Spec**: `http://emsoft02.ddns.net:2002/emsoft/emauto/openapi/swagger.json`
+
+### Entidades (OData)
+
+| Endpoint | Descrição |
+|----------|-----------|
+| `/Clientes` | Clientes |
+| `/Colaboradores` | Vendedores |
+| `/Produto` | Produtos |
+| `/Similares` | Produtos similares |
+| `/Orcamento` | Orçamentos |
+| `/OrcamentoItem` | Itens de orçamento |
+| `/OrcamentoFormaPgto` | Formas de pgto de orçamento |
+| `/Movimento` | Vendas/Pre-vendas |
+| `/MovimentoItens` | Itens de movimento |
+| `/MovimentoEventos` | Eventos de movimento |
+| `/MovimentoPagamentos` | Pagamentos |
+| `/ContaPagarReceber` | Contas a pagar/receber |
+| `/Liberacoes` | Liberações |
+| `/EstoqueFiliais` | Estoque por filial |
+
+### Service Operations
+
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/ServiceSistema/Login` | POST | Login (usuário + senha texto puro) |
+| `/ServiceSistema/LoginVendedor` | POST | Login vendedor |
+| `/ServiceSistema/InfoLogin` | GET | Info de login |
+| `/ServiceSistema/SelectSQL` | POST | ⚠️ SQL raw |
+| `/ServiceSistema/Cep` | GET | Consulta CEP |
+| `/ServiceProdutos/SuperBusca` | GET | Busca avançada de produtos |
+| `/ServiceProdutos/MarkupMargemProduto` | GET | Markup/margem |
+| `/ServiceVendas/NovoOrcamento` | POST | Criar orçamento |
+| `/ServiceVendas/NovoItemOrcamento` | POST | Criar item orçamento |
+| `/ServiceVendas/ExcluirItemOrcamento` | POST | Excluir item orçamento |
+| `/ServiceVendas/NovaPreVenda` | POST | Criar pre-venda |
+| `/ServiceVendas/GerarPendencias` | POST | Gerar pendências |
+| `/ServiceVendas/expedicao/lista` | GET | Lista expedição |
+| `/ServiceClientes/ListaHistoricoVendas` | GET | Histórico de vendas |
+| `/ServiceClientes/EstatisticasCliente` | GET | Estatísticas cliente |
+| `/ServiceClientes/InclusaoRapida` | POST | Inclusão rápida cliente |
+| `/ServiceUsuarios/RotinasUsuarioPodeVer` | GET | Rotinas do usuário |
+| `/ServiceUsuarios/UsuarioPoderes` | GET | Permissões |
+
+### Mapeamento de Tipos (XData → TypeScript)
+
+| XData | TypeScript |
+|-------|------------|
+| String | `string` |
+| Int32/Int64 | `number` |
+| Double/Decimal | `number` |
+| Date | `string` |
+| DateTime | `string` |
+| Boolean | `boolean` |
+| $ref não expandido | `string \| null` |
+| `$expand` | tipo do objeto |
+
+### Padrão @xdata.proxy
+
+```typescript
+// Campo expandido → objeto
+CLIENTE: iCliente;
+// Campo não expandido → proxy
+'FORNECEDOR@xdata.proxy': string;
+// $ref sem expand e sem proxy → nullable
+IDCartaoVenda: string | null;
+```
+
+### Client HTTP
+
+```typescript
+import { CustomFetch } from '@/services/api';
+// Resposta: { status, statusText, body: T }
+const res = await CustomFetch<iResultado>(`/Clientes?$filter=CIC eq '123'`);
+```
+
+### Ler o Swagger Spec
+
+```bash
+curl -o /tmp/swagger.json http://emsoft02.ddns.net:2002/emsoft/emauto/openapi/swagger.json
+python3 -c "
+import json
+spec = json.load(open('/tmp/swagger.json'))
+# Definições: EMSoft.DTO.<Modulo>.T<Entidade>
+print(json.dumps(spec['definitions']['EMSoft.DTO.Financeiro.TContaPagarReceber'], indent=2))
+"
+```

@@ -16,17 +16,17 @@
 
 ## Fase 1 — 🔴 Crítico: desbloquear o app
 
-- [ ] **1.1 Corrigir login (bcrypt)**
+- [x] **1.1 Corrigir login (bcrypt)**
   - `src/app/auth/_components/authForm.tsx:47,51` — remover `generateHash` e enviar a senha crua
   - `src/app/actions/user.ts:28` — `compareHash(user.password, cliente.value.SENHA)`
     - Hoje: `compareHash(cliente.value.SENHA, user.password)` → `compareSync(hashArmazenado, hashNovo)`;
       como o 2º arg é um hash novo com salt aleatório, a comparação **sempre falha**.
     - `compareHash(password, hash)` = `compareSync(password, hash)` → 1º arg deve ser a senha crua, 2º o hash armazenado.
-- [ ] **1.2 Padronizar cookies** para `token_b2b`/`user_b2b`
+- [x] **1.2 Padronizar cookies** para `token_b2b`/`user_b2b`
   - `src/app/actions/vendedor.ts:8-9` — `token`/`user` → `token_b2b`/`user_b2b`
   - `src/app/actions/liberacoes.ts:154,190,237` — `token` → `token_b2b`
   - `src/app/actions/orcamento.ts:87` — `user` → `user_b2b` *(novo)*
-- [ ] **1.3 Corrigir logout** — `src/app/app/logout/page.tsx`
+- [x] **1.3 Corrigir logout** — `src/app/app/logout/page.tsx`
   - Virar **server component** (remover `'use client'`) e reabilitar `redirect('/auth')` (linha 8, comentada).
   - `removeCookie` é server action — pode ser chamado de server component; `redirect` só funciona em server component.
 

@@ -10,6 +10,7 @@ const ButtonSingOut = () => {
   async function logOut() {
     await removeCookie('token_b2b');
     await removeCookie('user_b2b');
+    await removeCookie('CIC');
     route.replace('/auth');
   }
 

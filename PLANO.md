@@ -81,8 +81,8 @@
 
 ## Fase 6 — 🏗️ Infra / deploy
 
-- [ ] **6.1 Middleware real de auth** (hoje só `SessionWrapper` checando cookie server-side)
-- [ ] **6.2 Dockerfile** para o `output: 'standalone'` (scripts de deploy apontam para `/c/b2b-emsoft` — caminho Windows)
+- [x] **6.1 Middleware real de auth** — `src/middleware.ts` redireciona `/app/*` → `/auth` sem cookie `token_b2b`
+- [x] **6.2 Dockerfile** — multi-stage build para `output: 'standalone'` + `.dockerignore`
 
 ---
 

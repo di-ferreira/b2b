@@ -84,7 +84,7 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
 export async function GetOrcamentosFromVendedor(
   filter?: QueryOptions<iOrcamento>,
 ): Promise<ResponseType<iDataResultTable<iOrcamento>>> {
-  const VendedorLocal: string = await getCookie('user');
+  const VendedorLocal: string = await getCookie('user_b2b');
   const Vendedor: iVendedor = (await getVendedorAction()).value!;
   const tokenCookie = await getCookie('token_b2b');
   const OrcamentoMetadata = {

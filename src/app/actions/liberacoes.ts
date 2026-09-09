@@ -151,7 +151,7 @@ export async function CreateLiberacao(
 export async function UpdateLiberacao(
   liberacao: iLiberacoes,
 ): Promise<ResponseType<iLiberacoes>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResultBody<iLiberacoes>>(
     `${ROUTE_GET_ALL_LIBERACOES}(${liberacao.ID})`,
@@ -187,7 +187,7 @@ export async function UpdateLiberacao(
 export async function LoadLiberacao(
   filter?: iFilter<iLiberacoes> | null | undefined,
 ): Promise<ResponseType<iDataResultTable<iLiberacoes>>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
   const VendedorLocal: string = await getCookie('user_b2b');
 
   const FILTER = filter
@@ -234,7 +234,7 @@ export async function LoadLiberacaoCliente(
   cliente: number,
   codigo: string,
 ): Promise<ResponseType<iLiberacoes>> {
-  const tokenCookie = await getCookie('token');
+  const tokenCookie = await getCookie('token_b2b');
 
   const URL = `?$filter=CHAVE eq ${cliente} and CODIGO eq '${codigo}'&$top=1&$orderby=DATA_HORA desc`;
 

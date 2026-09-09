@@ -5,8 +5,8 @@ import { CustomFetch } from '@/services/api';
 import { getCookie } from '.';
 
 export async function getVendedorAction(): Promise<ResponseType<iVendedor>> {
-  const tokenCookie = await getCookie('token');
-  const userCookie = await getCookie('user');
+  const tokenCookie = await getCookie('token_b2b');
+  const userCookie = await getCookie('user_b2b');
 
   const responseData = await CustomFetch(`/Colaboradores(${userCookie})`, {
     method: 'GET',

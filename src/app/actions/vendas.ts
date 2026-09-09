@@ -11,12 +11,12 @@ const ROUTE_GET_ALL_PRE_VENDA = '/Movimento';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 
 const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
-  const VendedorLocal: string = await getCookie('user_b2b');
+  const ClienteLocal: string = await getCookie('user_b2b');
 
-  let ResultFilter: string = `$filter=TIPOMOV eq 'VENDA'and CANCELADO eq 'N' and VENDEDOR eq ${VendedorLocal}`;
+  let ResultFilter: string = `$filter=TIPOMOV eq 'VENDA'and CANCELADO eq 'N' and CLIENTE eq ${ClienteLocal}`;
 
   if (filter.filter && filter.filter.length >= 1) {
-    ResultFilter = `$filter=VENDEDOR eq ${VendedorLocal}`;
+    ResultFilter = `$filter=CLIENTE eq ${ClienteLocal}`;
     const andStr = ' AND ';
     filter.filter.map((itemFilter) => {
       if (itemFilter.typeSearch)
@@ -51,12 +51,12 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 };
 
 export async function GetVendas(filter: iFilter<iMovimento>) {
-  const VendedorLocal: string = await getCookie('user_b2b');
+  const ClienteLocal: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');
 
   const FILTER = filter
     ? await CreateFilter(filter)
-    : `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+    : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;

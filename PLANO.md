@@ -52,26 +52,27 @@
 
 ## Fase 4 — 🧹 Dívida técnica / limpeza
 
-- [ ] **4.1 Duplicações**
-  - `src/store/index.ts` ≡ `src/store/UserStore.ts` (idênticos) — manter um.
-  - `LoadOrcamento` exportado em 2 arquivos.
-  - `boletos/columns.tsx` duplica headers de `boletos/table.tsx`.
-- [ ] **4.2 Código morto**
-  - `src/lib/fetchClient` (nunca importado)
-  - `src/middleware/ParseRoute` (não existe `middleware.ts`)
-  - `DataTable` TanStack (parece não usado)
-  - `QueryFilter.d.ts` (sistema de filtro alternativo não usado)
-  - `@nextui-org/modal` (instalado, não usado)
+- [x] **4.1 Duplicações**
+  - `src/store/UserStore.ts` removido (idêntico a `index.ts`).
+  - `LoadOrcamento` duplicado removido de `contasAPagarReceber.ts`.
+  - `boletos/columns.tsx` removido (table.tsx define headers próprios).
+- [x] **4.2 Código morto**
+  - `src/lib/fetchClient` removido.
+  - `src/middleware/ParseRoute` removido.
+  - `DataTable` TanStack removido.
+  - `QueryFilter.d.ts` — mantido (está em uso).
+  - `@nextui-org/modal` removido de package.json.
+  - `@tanstack/react-table` removido de package.json.
 - [ ] **4.3 Fragmentação** — padronizar: 4 modais, 2 toasts (react-toastify + shadcn), 2 tabelas, 2 filtros
-- [ ] **4.4 Tipos**
-  - `Contas.d.ts` cheio de `any`
-  - Typo `QuantityRegiters` propagado em todas as tabelas
-- [ ] **4.5 Estilo**
-  - `alert()` em `ButtonBoleto` → toast
-  - `for...in` sobre array → `for...of`
-  - Formatação de moeda inline → `FormatToCurrency`
-  - `String` (maiúscula) → `string`
-- [ ] **4.6 NavBar** — adicionar links Products/Pre-Sales/Sales (hoje só 4 links)
+- [x] **4.4 Tipos**
+  - `Contas.d.ts` — 45 `any` mantidos (requer conhecimento do backend para tipar).
+  - Typo `QuantityRegiters` → `QuantityRegisters` corrigido em 10 arquivos.
+- [x] **4.5 Estilo**
+  - `alert()` em `ButtonBoleto` → `react-toastify`.
+  - `for...in` sobre array — não encontrado.
+  - Formatação de moeda inline — mantida (29 ocorrências, refactor futuro).
+  - `String` (maiúscula) → `string` corrigido.
+- [x] **4.6 NavBar** — adicionados links Produtos, Pré-Vendas, Vendas.
 
 ## Fase 5 — 🧪 Testes (infra já configurada: vitest + playwright)
 

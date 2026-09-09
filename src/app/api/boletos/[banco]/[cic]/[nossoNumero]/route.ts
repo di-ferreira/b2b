@@ -92,9 +92,25 @@ export async function GET(
   try {
     let { banco, cic, nossoNumero } = params;
 
+    if (!/^\d+$/.test(cic) || !/^\d+$/.test(nossoNumero)) {
+      return NextResponse.json(
+        { error: 'Parâmetros inválidos' },
+        { status: 400 }
+      );
+    }
+
     const fileName = `Boleto_${cic}_${nossoNumero}.pdf`;
 
     const possibleFolders = resolveBancoFolder(banco);
+
+    for (const folder of possibleFolders) {
+      if (!/^[a-z0-9]+$/.test(folder)) {
+        return NextResponse.json(
+          { error: 'Parâmetro banco inválido' },
+          { status: 400 }
+        );
+      }
+    }
 
     let fileBuffer: Buffer | null = null;
     let foundFileName: string | null = null;

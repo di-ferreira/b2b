@@ -19,8 +19,8 @@ interface iReqSuperBusca {
   PularRegistros?: number;
   QuantidadeRegistros?: number;
 }
-const SQL_NEW_PRICE_FROM_TABLE = (produto: string, tabela: string) =>
-  `select E.PRODUTO, E.PRECO, cast(E.PRECO * ((T.PERCENTUAL / 100) + 1) as numeric(10,2)) as NOVO_PRECO from EST E join TAB T on (T.TABELA = '${tabela}') where E.PRODUTO = '${produto}' `;
+const SQL_NEW_PRICE_FROM_TABLE =
+  'select E.PRODUTO, E.PRECO, cast(E.PRECO * ((T.PERCENTUAL / 100) + 1) as numeric(10,2)) as NOVO_PRECO from EST E join TAB T on (T.TABELA = :TABELA) where E.PRODUTO = :PRODUTO';
 
 const SQL_MWM =
   "select TRIM(T.TABELA) AS TABELA, CAST((E.fab_bruto - ((E.fab_bruto*T.PERCENTUAL)/100)) AS NUMERIC(10,2)) AS NOVO_PRECO, T.bloqueada AS BLOQUEADO from tabela_mwm T, EST E WHERE E.PRODUTO=:PRODUTO AND TRIM(T.TABELA) <> '%%'";
@@ -33,8 +33,8 @@ const SQL_2D =
 const ROUTE_SUPER_BUSCA = '/ServiceProdutos/SuperBusca';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const ROUTE_ESTOQUE_LOJAS = '/EstoqueFiliais';
-const SQL_PRODUCTS_PROMOTION = (produto: string) =>
-  `select  E.PRODUTO, E.REFERENCIA, e.nome, e.preco, e.qtdatual, P.valor as OFERTA, p.validade from EST E join promocao p on (p.produto = e.produto) where p.validade >= 'TODAY' and e.produto = '${produto}' order by 6`;
+const SQL_PRODUCTS_PROMOTION =
+  "select E.PRODUTO, E.REFERENCIA, e.nome, e.preco, e.qtdatual, P.valor as OFERTA, p.validade from EST E join promocao p on (p.produto = e.produto) where p.validade >= 'TODAY' and e.produto = :PRODUTO order by 6";
 
 const ROUTE_GET_ALL_PRODUTO = '/Produto';
 const ROUTE_GET_ALL_SIMILARES = '/Similares';
@@ -356,10 +356,25 @@ export async function GetNewPriceFromTable(
 ): Promise<ResponseType<number>> {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql: string = SQL_NEW_PRICE_FROM_TABLE(product.PRODUTO, table);
+  const body: string = JSON.stringify({
+    pSQL: SQL_NEW_PRICE_FROM_TABLE,
+    pPar: [
+      {
+        ParamName: 'TABELA',
+        ParamType: 'ftString',
+        ParamValues: [table],
+      },
+      {
+        ParamName: 'PRODUTO',
+        ParamType: 'ftString',
+        ParamValues: [product.PRODUTO],
+      },
+    ],
+  });
 
-  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
-    method: 'GET',
+  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
+    method: 'POST',
+    body: body,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
@@ -397,10 +412,20 @@ export async function GetProductPromotion(
 ): Promise<ResponseType<iProductPromotion>> {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql: string = SQL_PRODUCTS_PROMOTION(product.PRODUTO);
+  const body: string = JSON.stringify({
+    pSQL: SQL_PRODUCTS_PROMOTION,
+    pPar: [
+      {
+        ParamName: 'PRODUTO',
+        ParamType: 'ftString',
+        ParamValues: [product.PRODUTO],
+      },
+    ],
+  });
 
-  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
-    method: 'GET',
+  const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
+    method: 'POST',
+    body: body,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,

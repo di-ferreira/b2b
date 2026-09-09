@@ -191,10 +191,25 @@ export async function GetCliente(
 export async function GetPGTOsAtrazados(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql: string = `SELECT COUNT(R.REGISTRO) AS QTD, SUM(R.RESTA) AS VALOR FROM CTS R JOIN CAR C ON (C.CARTAO=R.TIPO) WHERE R.CONTA IN ('R','C') AND R.RESTA > 0 AND R.VENCIMENTO < '${dayjs().format('YYYY-MM-DD')}' AND R.CLIENTE=${cliente} AND COALESCE(C.financeiro_cliente,'N')='S' AND R.CANCELADO='N'`;
+  const body: string = JSON.stringify({
+    pSQL: SQL_PGTO_ATRAZO,
+    pPar: [
+      {
+        ParamName: 'DATA',
+        ParamType: 'ftString',
+        ParamValues: [dayjs().format('YYYY-MM-DD')],
+      },
+      {
+        ParamName: 'CLIENTE',
+        ParamType: 'ftInteger',
+        ParamValues: [cliente],
+      },
+    ],
+  } as iSelectSQL);
 
-  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
-    method: 'GET',
+  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
+    method: 'POST',
+    body: body,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
@@ -219,10 +234,25 @@ export async function GetPGTOsAtrazados(cliente: number) {
 export async function GetPGTOsNaoVencidos(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql: string = `SELECT COUNT(R.REGISTRO) AS QTD, SUM(R.RESTA) AS VALOR FROM CTS R JOIN CAR C ON (C.CARTAO=R.TIPO) WHERE R.CONTA IN ('C','R') AND R.RESTA>0 AND R.VENCIMENTO>='${String(dayjs().format('YYYY-MM-DD'))}' AND R.CLIENTE='${cliente}' AND COALESCE(C.financeiro_cliente,'N')='S' AND R.CANCELADO='N'`;
+  const body: string = JSON.stringify({
+    pSQL: SQL_PGTO_NAO_VENCIDAS,
+    pPar: [
+      {
+        ParamName: 'DATA',
+        ParamType: 'ftString',
+        ParamValues: [dayjs().format('YYYY-MM-DD')],
+      },
+      {
+        ParamName: 'CLIENTE',
+        ParamType: 'ftInteger',
+        ParamValues: [cliente],
+      },
+    ],
+  } as iSelectSQL);
 
-  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}?pSQL=${sql}`, {
-    method: 'GET',
+  const response = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
+    method: 'POST',
+    body: body,
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
@@ -248,12 +278,22 @@ export async function GetPGTOsNaoVencidos(cliente: number) {
 export async function GetPGTOsEmAberto(cliente: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql: string = `select R.VENCIMENTO, R.DATA, R.TIPO, R.HISTORICO, cast('TODAY' as date) - R.VENCIMENTO as ATRASO, R.RESTA, R.DOC, R.EMISSAO_BOLETO from CTS R LEFT OUTER JOIN CAR C ON (C.cartao=R.tipo) where R.CONTA in ('R', 'C') and R.CANCELADO = 'N' and COALESCE(C.financeiro_cliente,'N')='S' AND R.CLIENTE = ${cliente} and R.RESTA <> 0 order by 1`;
+  const body: string = JSON.stringify({
+    pSQL: SQL_CONTAS_ABERTAS,
+    pPar: [
+      {
+        ParamName: 'CLIENTE',
+        ParamType: 'ftInteger',
+        ParamValues: [cliente],
+      },
+    ],
+  } as iSelectSQL);
 
   const response = await CustomFetch<ResponseSQL<iPgtoEmAberto[]>>(
-    `${ROUTE_SELECT_SQL}?pSQL=${sql}`,
+    `${ROUTE_SELECT_SQL}`,
     {
-      method: 'GET',
+      method: 'POST',
+      body: body,
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,

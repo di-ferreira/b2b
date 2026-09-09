@@ -18,7 +18,7 @@ export async function GET(req: NextRequest, res: NextResponse) {
     return new Response(
       JSON.stringify({ error: 'Erro ao ler imagens', details: err }),
       {
-        status: 200,
+        status: 500,
         headers: { 'Content-Type': 'application/json' },
       }
     );

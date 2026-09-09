@@ -97,24 +97,30 @@ export async function getVendasDashboard() {
   const sql: string = `SELECT
     c.NOME AS CLIENTE,
     SUM(m.TOTAL) AS TOTAL_VENDAS
-FROM
+ FROM
     MVE m
     JOIN CLI c ON m.CLIENTE = c.CLIENTE
-WHERE
+ WHERE
     m.TIPOMOV = 'VENDA'
-    AND m.VENDEDOR = ${VendedorLocal}
+    AND m.VENDEDOR = :VENDEDOR
     AND m.CANCELADO = 'N'
     AND m.DATA BETWEEN DATEADD(1 - EXTRACT(DAY FROM CURRENT_DATE) DAY TO CURRENT_DATE)
                     AND DATEADD(-EXTRACT(DAY FROM DATEADD(1 MONTH TO CURRENT_DATE)) DAY TO DATEADD(1 MONTH TO CURRENT_DATE))
-GROUP BY
+ GROUP BY
     c.NOME
-ORDER BY
+ ORDER BY
     c.NOME;
-`;
+ `;
 
   const body: string = JSON.stringify({
     pSQL: sql,
-    pPar: [],
+    pPar: [
+      {
+        ParamName: 'VENDEDOR',
+        ParamType: 'ftInteger',
+        ParamValues: [Number(VendedorLocal)],
+      },
+    ],
   } as iSelectSQL);
 
   const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {
@@ -149,21 +155,27 @@ export async function getDataTotalVenda() {
     EXTRACT(YEAR FROM data) AS ano,
     EXTRACT(MONTH FROM data) AS mes,
     SUM(M.TOTAL) AS total_mensal
-FROM 
+ FROM 
     MVE M
-WHERE 
-    M.VENDEDOR = ${VendedorLocal} 
+ WHERE 
+    M.VENDEDOR = :VENDEDOR 
     AND M.data >= dateadd(month, -1, current_date)
     AND M.CANCELADO = 'N'
-GROUP BY 
+ GROUP BY 
     EXTRACT(YEAR FROM data),
     EXTRACT(MONTH FROM data)
-ORDER BY 
+ ORDER BY 
     ano, mes;`;
 
   const body: string = JSON.stringify({
     pSQL: sql,
-    pPar: [],
+    pPar: [
+      {
+        ParamName: 'VENDEDOR',
+        ParamType: 'ftInteger',
+        ParamValues: [Number(VendedorLocal)],
+      },
+    ],
   } as iSelectSQL);
 
   const res = await CustomFetch<any>(`${ROUTE_SELECT_SQL}`, {

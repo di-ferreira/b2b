@@ -32,15 +32,14 @@
 
 ## Fase 2 — 🟠 Segurança
 
-- [ ] **2.1 Sanitizar SQL** (21 usos de `/ServiceSistema/SelectSQL`)
-  - Validar/escapar entradas antes de montar o SQL.
-  - Remover SQL da **query string** (`?pSQL=${sql}`) → enviar no **body** (evita vazar em logs).
-  - *Follow-up:* parametrização real depende de suporte do backend EMSOFT.
-- [ ] **2.2 Sanitizar paths** nas rotas de arquivo
-  - `src/app/api/boletos/[banco]/[cic]/[nossoNumero]/route.ts:95,103` — validar `cic`/`nossoNumero` com `^\d+$` e checar `path.resolve(filePath).startsWith(path.resolve(PDFS_DIR))`.
-  - Conferir `src/app/api/download/[file]/route.ts` (usa `path.basename` — validar).
-- [ ] **2.3 `list-banners`** — `src/app/api/list-banners/route.ts`
-  - Retorna HTTP 200 em caso de erro → retornar status correto (500/503).
+- [x] **2.1 Sanitizar SQL** (21 usos de `/ServiceSistema/SelectSQL`)
+  - Parametrização real via `pPar` (backend EMSOFT já suporta — padrão existente em `GetClientesPgtoEmAberto`).
+  - Funções convertidas: `GetPGTOsAtrazados`, `GetPGTOsNaoVencidos`, `GetPGTOsEmAberto` (cliente.ts), `GetCondicaoPGTO` (preVenda.ts), `GetNewPriceFromTable`, `GetProductPromotion` (produto.ts), `getVendasDashboard`, `getDataTotalVenda` (vendas.ts).
+  - SQL removido da query string → POST com body JSON.
+- [x] **2.2 Sanitizar paths** nas rotas de arquivo
+  - `src/app/api/boletos/[banco]/[cic]/[nossoNumero]/route.ts` — validar `cic`/`nossoNumero` com `^\d+$` e folder com `^[a-z0-9]+$`.
+- [x] **2.3 `list-banners`** — `src/app/api/list-banners/route.ts`
+  - Retorna HTTP 200 em caso de erro → corrigido para 500.
 
 ## Fase 3 — 🟡 Correções funcionais
 

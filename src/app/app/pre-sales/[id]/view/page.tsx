@@ -1,81 +1,10 @@
 import { GetPreVenda } from '@/app/actions/preVenda';
-import { iItensList } from '@/@types/PreVenda';
-import { iColumnType } from '@/@types/Table';
-import { DataTable } from '@/components/CustomDataTable';
+import PreSaleItemsTable from '@/components/preSale/ViewItemsTable';
 import dayjs from 'dayjs';
 
 interface iViewPreSalePageProps {
   params: { id: string };
 }
-
-const itensHeaders: iColumnType<iItensList>[] = [
-  {
-    key: 'PRODUTO.PRODUTO',
-    title: 'CÓDIGO',
-    width: '15%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-center h-[45px]'>
-        {item.PRODUTO?.PRODUTO}
-      </span>
-    ),
-  },
-  {
-    key: 'PRODUTO.REFERENCIA',
-    title: 'REFERÊNCIA',
-    width: '15%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-center h-[45px]'>
-        {item.PRODUTO?.REFERENCIA}
-      </span>
-    ),
-  },
-  {
-    key: 'PRODUTO.NOME',
-    title: 'PRODUTO',
-    width: '25%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-start text-wrap h-[45px]'>
-        {item.PRODUTO?.NOME}
-      </span>
-    ),
-  },
-  {
-    key: 'VALOR',
-    title: 'VALOR UNITÁRIO',
-    width: '12%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-center h-[45px]'>
-        {item.VALOR?.toLocaleString('pt-br', {
-          style: 'currency',
-          currency: 'BRL',
-        })}
-      </span>
-    ),
-  },
-  {
-    key: 'QTD',
-    title: 'QTD',
-    width: '8%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-center h-[45px]'>
-        {item.QTD}
-      </span>
-    ),
-  },
-  {
-    key: 'TOTAL',
-    title: 'TOTAL',
-    width: '15%',
-    render: (_, item) => (
-      <span className='flex w-full items-center justify-center h-[45px]'>
-        {item.TOTAL?.toLocaleString('pt-br', {
-          style: 'currency',
-          currency: 'BRL',
-        })}
-      </span>
-    ),
-  },
-];
 
 export default async function ViewPreSalePage({ params }: iViewPreSalePageProps) {
   const result = await GetPreVenda(Number(params.id));
@@ -137,11 +66,7 @@ export default async function ViewPreSalePage({ params }: iViewPreSalePageProps)
       </div>
 
       <div className='border-t-2 border-emsoft_orange-main pt-4'>
-        <DataTable
-          columns={itensHeaders}
-          TableData={pv.Itens_List || []}
-          IsLoading={false}
-        />
+        <PreSaleItemsTable itens={pv.Itens_List || []} />
       </div>
     </div>
   );

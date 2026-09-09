@@ -201,6 +201,38 @@ export async function getDataTotalVenda() {
     error: undefined,
   };
 }
+export async function GetVendaById(id: number) {
+  const tokenCookie = await getCookie('token_b2b');
+
+  const FILTER = `('${id}')?$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+
+  const response = await CustomFetch<iMovimento>(
+    `${ROUTE_GET_ALL_PRE_VENDA}${FILTER}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  if (response.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(response.status),
+        message: String(response.statusText),
+      },
+    };
+  }
+
+  return {
+    value: response.body,
+    error: undefined,
+  };
+}
+
 export async function getLastVenda() {
   const VendedorLocal: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');

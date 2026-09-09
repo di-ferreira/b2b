@@ -43,10 +43,12 @@
 
 ## Fase 3 — 🟡 Correções funcionais
 
-- [ ] **3.1 `sales/[id]`** — `src/app/app/sales/[id]/page.tsx`
-  - Hoje renderiza `FormEditPreSale` (copy-paste). Criar form de **venda** próprio.
-- [ ] **3.2 `products/[id]`** — `src/app/app/products/[id]/page.tsx`
-  - Nome enganoso: renderiza detalhe do **cliente**. Desduplicar de `customer/[id]` e corrigir link "Voltar" (aponta para `/app/customers`, inexistente).
+- [x] **3.1 `sales/[id]`** — `src/app/app/sales/[id]/page.tsx`
+  - Substituído `FormEditPreSale` por página de detalhe de venda (iMovimento) com itens.
+  - Nova action `GetVendaById` em `vendas.ts`.
+- [x] **3.2 `products/[id]`** — `src/app/app/products/[id]/page.tsx`
+  - Substituído detalhe de cliente por página de detalhe de produto (iProduto).
+  - Usa action existente `GetProduct`. Link "Voltar" corrigido para `/app/products`.
 
 ## Fase 4 — 🧹 Dívida técnica / limpeza
 

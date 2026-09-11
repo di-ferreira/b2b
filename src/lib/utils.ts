@@ -111,3 +111,11 @@ export function toIntSafe(value: unknown): number {
   return Math.trunc(parsed);
 }
 
+export function assertSafeSQLValue(value: unknown, field: string): string {
+  const str = String(value);
+  if (!/^[\w./-]+$/.test(str)) {
+    throw new Error(`Valor inválido para ${field}: ${str}`);
+  }
+  return str;
+}
+

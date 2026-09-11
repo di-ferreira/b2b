@@ -14,6 +14,10 @@ function sanitizeString(value: string): string {
   return value.replace(/'/g, "''");
 }
 
+export function sanitizeODataValue(value: unknown): string {
+  return sanitizeString(String(value));
+}
+
 /* ============================
    Normalização baseada em metadata
 ============================ */

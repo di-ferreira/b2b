@@ -4,7 +4,7 @@ import { iColumnType } from '@/@types/Table';
 import { GetOrcamento, removeItem } from '@/app/actions/orcamento';
 import { DataTable } from '@/components/CustomDataTable';
 import { Loading } from '@/components/Loading';
-import ToastNotify from '@/components/ToastNotify';
+
 import { Button } from '@/components/ui/button';
 import {
   faEdit,
@@ -36,19 +36,10 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
         if (res.value) {
           setData(res.value);
         }
-        if (res.error !== undefined) {
-          ToastNotify({
-            message: `Erro: ${res.error.message}`,
-            type: 'error',
-          });
-        }
         setLoading(false);
       })
-      .catch((err) => {
-        ToastNotify({
-          message: `Erro: ${err.message}`,
-          type: 'error',
-        });
+      .catch(() => {
+        setLoading(false);
       })
       .finally(() => {
         setLoading(false);

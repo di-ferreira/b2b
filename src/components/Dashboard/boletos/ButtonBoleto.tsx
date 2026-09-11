@@ -14,7 +14,8 @@ export default function ButtonBoleto(conta: { conta: iContas }) {
     }
     banco = banco.toLocaleLowerCase().trim().replaceAll(' ', '');
 
-    const url = `/api/boletos/${banco}/${conta.conta.CLIENTE.CIC}/${conta.conta.NOSSO_NUMERO}`;
+    const cic = conta.conta.CLIENTE.CIC.replace(/\D/g, '');
+    const url = `/api/boletos/${banco}/${cic}/${conta.conta.NOSSO_NUMERO}`;
 
     const response = await fetch(url);
 
@@ -24,7 +25,7 @@ export default function ButtonBoleto(conta: { conta: iContas }) {
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `Boleto_${conta.conta.CLIENTE.CIC}_${conta.conta.NOSSO_NUMERO}.pdf`;
+      a.download = `Boleto_${cic}_${conta.conta.NOSSO_NUMERO}.pdf`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

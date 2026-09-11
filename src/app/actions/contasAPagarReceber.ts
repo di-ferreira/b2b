@@ -173,7 +173,7 @@ export async function GetContasDashboard() {
   const Cliente: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');
 
-  const FILTER = `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1&$expand=CLIENTE&$orderby=VENCIMENTO desc&$inlinecount=allpages`;
+  const FILTER = `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1 and EMISSAO_BOLETO ne null&$expand=CLIENTE&$orderby=VENCIMENTO desc&$inlinecount=allpages`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;
@@ -186,9 +186,14 @@ export async function GetContasDashboard() {
     },
   });
 
+  const cutoff = dayjs().add(15, 'day').endOf('day');
+  const filtered = response.body.value.filter(
+    (c) => dayjs(c.VENCIMENTO).isBefore(cutoff)
+  );
+
   const result: iDataResultTable<iContas> = {
-    Qtd_Registros: response.body['@xdata.count'],
-    value: response.body.value,
+    Qtd_Registros: filtered.length,
+    value: filtered,
   };
 
   if (response.status !== 200) {

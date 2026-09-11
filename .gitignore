@@ -45,4 +45,6 @@ public/banners/03.webp
 .pnp.cjs
 .pnp.loader.mjs
 
+/.playwright-mcp
+
 /.yarn.playwright-mcp/

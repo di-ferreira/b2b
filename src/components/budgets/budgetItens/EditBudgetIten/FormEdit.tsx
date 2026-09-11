@@ -202,9 +202,9 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   }
 
   async function findProduct() {
-    const products = await searchProducts(WordProducts);
-
     try {
+      const products = await searchProducts(WordProducts);
+
       if (products.length === 1) {
         const product = await selectProduct(
           products[0],

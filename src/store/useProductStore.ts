@@ -54,113 +54,120 @@ const useProductStore = create<ProductStore>((set, get) => ({
 
   searchProducts: async (word) => {
     set({ isLoading: true });
-    const response = await GetProducts({
-      top: 50,
-      skip: 0,
-      orderBy: 'PRODUTO',
-      filter: [
-        { key: 'PRODUTO', value: word.toUpperCase(), typeSearch: 'like' },
-        {
-          key: 'REFERENCIA',
-          value: word.toUpperCase(),
-          typeSearch: 'like',
-          typeCondition: 'or',
-        },
-        {
-          key: 'NOME',
-          value: word.toUpperCase(),
-          typeSearch: 'like',
-          typeCondition: 'or',
-        },
-        {
-          key: 'APLICACOES',
-          value: word.toUpperCase(),
-          typeSearch: 'like',
-          typeCondition: 'or',
-        },
-        {
-          key: 'VENDA',
-          value: 'S',
-          typeCondition: 'or',
-          typeSearch: 'eq',
-          groupOperator: 'or',
-        },
-        {
-          key: 'VENDA',
-          value: null,
-          typeCondition: 'or',
-          typeSearch: 'eq',
-          groupOperator: 'or',
-        },
-        { key: 'TRANCAR', value: 'N', typeCondition: 'and', typeSearch: 'eq' },
-        { key: 'ATIVO', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
-      ],
-    });
+    try {
+      const response = await GetProducts({
+        top: 50,
+        skip: 0,
+        orderBy: 'PRODUTO',
+        filter: [
+          { key: 'PRODUTO', value: word.toUpperCase(), typeSearch: 'like' },
+          {
+            key: 'REFERENCIA',
+            value: word.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'NOME',
+            value: word.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'APLICACOES',
+            value: word.toUpperCase(),
+            typeSearch: 'like',
+            typeCondition: 'or',
+          },
+          {
+            key: 'VENDA',
+            value: 'S',
+            typeCondition: 'or',
+            typeSearch: 'eq',
+            groupOperator: 'or',
+          },
+          {
+            key: 'VENDA',
+            value: null,
+            typeCondition: 'or',
+            typeSearch: 'eq',
+            groupOperator: 'or',
+          },
+          { key: 'TRANCAR', value: 'N', typeCondition: 'and', typeSearch: 'eq' },
+          { key: 'ATIVO', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
+        ],
+      });
 
-    const list = response.value?.value || [];
-    set({ searchResult: list, isLoading: false });
-    return list;
+      const list = response.value?.value || [];
+      set({ searchResult: list, isLoading: false });
+      return list;
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
+    }
   },
 
   selectProduct: async (prod, cliente) => {
     set({ isLoading: true, productSelected: prod });
+    try {
+      const cacheKey = `${cliente.CLIENTE}-${prod.PRODUTO}`;
+      const cache = get().cacheDetails[cacheKey];
 
-    const cacheKey = `${cliente.CLIENTE}-${prod.PRODUTO}`;
-    const cache = get().cacheDetails[cacheKey];
+      const [promo, tablePriceResult] = await Promise.all([
+        GetProductPromotion(prod),
+        GetNewPriceFromTable(prod, cliente.Tabela),
+      ]);
 
-    // Busca Preço e Oferta (Sempre buscar pois preço pode mudar rápido)
-    const [promo, tablePriceResult] = await Promise.all([
-      GetProductPromotion(prod),
-      GetNewPriceFromTable(prod, cliente.Tabela),
-    ]);
+      let price = promo.value
+        ? promo.value.OFERTA
+        : tablePriceResult.value || prod.PRECO;
+      let isOferta = !!promo.value;
 
-    let price = promo.value
-      ? promo.value.OFERTA
-      : tablePriceResult.value || prod.PRECO;
-    let isOferta = !!promo.value;
+      if (cache) {
+        set({
+          history: cache.history,
+          similares: cache.similares,
+          currentPrice: price,
+          isOferta: isOferta,
+          isLoading: false,
+        });
+        return;
+      }
 
-    if (cache) {
-      set({
-        history: cache.history,
-        similares: cache.similares,
+      const [historyRes, simsRes] = await Promise.all([
+        GetSaleHistory(cliente, prod),
+        GetSimilares(prod.PRODUTO),
+      ]);
+
+      let similaresFiltrados: iListaSimilare[] = [];
+      if (simsRes.value !== undefined && simsRes.value !== null) {
+        similaresFiltrados = simsRes.value.filter((similar) => {
+          return (
+            similar.EXTERNO.ATIVO !== 'N' &&
+            similar.EXTERNO.VENDA !== 'N' &&
+            similar.EXTERNO.TRANCAR !== 'S'
+          );
+        });
+      }
+
+      const history = historyRes.value || [];
+      const similares = similaresFiltrados;
+
+      set((state) => ({
+        history,
+        similares,
         currentPrice: price,
-        isOferta: isOferta,
+        isOferta,
         isLoading: false,
-      });
-      return;
+        cacheDetails: {
+          ...state.cacheDetails,
+          [cacheKey]: { history, similares },
+        },
+      }));
+    } catch (error) {
+      set({ isLoading: false });
+      throw error;
     }
-
-    const [historyRes, simsRes] = await Promise.all([
-      GetSaleHistory(cliente, prod),
-      GetSimilares(prod.PRODUTO),
-    ]);
-
-    let similaresFiltrados: iListaSimilare[] = [];
-    if (simsRes.value !== undefined && simsRes.value !== null) {
-      similaresFiltrados = simsRes.value.filter((similar) => {
-        return (
-          similar.EXTERNO.ATIVO !== 'N' &&
-          similar.EXTERNO.VENDA !== 'N' &&
-          similar.EXTERNO.TRANCAR !== 'S'
-        );
-      });
-    }
-
-    const history = historyRes.value || [];
-    const similares = similaresFiltrados;
-
-    // Atualiza estado e guarda no cache
-    set((state) => ({
-      history,
-      similares,
-      currentPrice: price,
-      isOferta,
-      isLoading: false,
-      cacheDetails: {
-        ...state.cacheDetails,
-        [cacheKey]: { history, similares },
-      },
-    }));
   },
 }));
 

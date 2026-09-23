@@ -17,7 +17,7 @@ export function TableRowCell<T>({ item, column }: iTableCellProps<T>) {
         <td
           className={cn(
             column.isHideMobile && 'tablet:hidden',
-            `pr-5 pl-0 text-xs text-center overflow-hidden whitespace-nowrap table-fixed text-ellipsis`,
+            `px-5 text-xs text-center overflow-hidden whitespace-nowrap table-fixed text-ellipsis`,
             `overflow-hidden table-fixed border-b`,
             `${column.isHideMobile ? 'tablet:hidden' : ''}`
           )}

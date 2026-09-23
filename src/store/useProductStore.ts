@@ -1,6 +1,12 @@
 import { iCliente } from '@/@types/Cliente';
-import { iListaSimilare, iProduto, iSaleHistory } from '@/@types/Produto';
 import {
+  iEstoqueLoja,
+  iListaSimilare,
+  iProduto,
+  iSaleHistory,
+} from '@/@types/Produto';
+import {
+  GetEstoqueFiliais,
   GetNewPriceFromTable,
   GetProductPromotion,
   GetProducts,
@@ -14,6 +20,7 @@ type ProductStore = {
   searchResult: iProduto[];
   similares: iListaSimilare[];
   history: iSaleHistory[];
+  estoqueFiliais: iEstoqueLoja[];
   isLoading: boolean;
   isOferta: boolean;
   currentPrice: number;
@@ -21,7 +28,11 @@ type ProductStore = {
   // Cache para evitar re-chamadas desnecessárias
   cacheDetails: Record<
     string,
-    { history: iSaleHistory[]; similares: iListaSimilare[] }
+    {
+      history: iSaleHistory[];
+      similares: iListaSimilare[];
+      estoqueFiliais: iEstoqueLoja[];
+    }
   >;
 
   searchProducts: (word: string) => Promise<iProduto[]>;
@@ -37,6 +48,7 @@ const useProductStore = create<ProductStore>((set, get) => ({
   searchResult: [],
   similares: [],
   history: [],
+  estoqueFiliais: [],
   isLoading: false,
   isOferta: false,
   currentPrice: 0,
@@ -47,6 +59,7 @@ const useProductStore = create<ProductStore>((set, get) => ({
       productSelected: null,
       similares: [],
       history: [],
+      estoqueFiliais: [],
       isOferta: false,
       currentPrice: 0,
       cacheDetails: {},
@@ -127,6 +140,7 @@ const useProductStore = create<ProductStore>((set, get) => ({
         set({
           history: cache.history,
           similares: cache.similares,
+          estoqueFiliais: cache.estoqueFiliais,
           currentPrice: price,
           isOferta: isOferta,
           isLoading: false,
@@ -134,9 +148,10 @@ const useProductStore = create<ProductStore>((set, get) => ({
         return;
       }
 
-      const [historyRes, simsRes] = await Promise.all([
+      const [historyRes, simsRes, estoqueRes] = await Promise.all([
         GetSaleHistory(cliente, prod),
         GetSimilares(prod.PRODUTO),
+        GetEstoqueFiliais(prod.PRODUTO),
       ]);
 
       let similaresFiltrados: iListaSimilare[] = [];
@@ -152,16 +167,18 @@ const useProductStore = create<ProductStore>((set, get) => ({
 
       const history = historyRes.value || [];
       const similares = similaresFiltrados;
+      const estoqueFiliais = estoqueRes.value || [];
 
       set((state) => ({
         history,
         similares,
+        estoqueFiliais,
         currentPrice: price,
         isOferta,
         isLoading: false,
         cacheDetails: {
           ...state.cacheDetails,
-          [cacheKey]: { history, similares },
+          [cacheKey]: { history, similares, estoqueFiliais },
         },
       }));
     } catch (error) {

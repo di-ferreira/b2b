@@ -40,6 +40,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     currentPrice,
     similares,
     history,
+    estoqueFiliais,
     clearDetails,
   } = useProductStore();
   const [IsVisibleModalProducts, setIsVisibleModalProducts] =
@@ -498,6 +499,32 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
               labelPosition='top'
             />
           </div>
+          {estoqueFiliais.length > 0 && (
+            <div className={`flex w-[30%]`}>
+              <div className='text-[11px] font-bold text-emsoft_dark-text mb-1'>
+                ESTOQUE EM OUTRAS FILIAIS
+              </div>
+              <div className='flex flex-col gap-y-1 max-h-[80px] overflow-y-auto'>
+                {estoqueFiliais.map((filial, idx) => (
+                  <div
+                    key={idx}
+                    className='flex items-center gap-x-2 text-[11px] bg-gray-50 px-2 py-1 rounded'
+                  >
+                    <span className='font-bold w-[80px] truncate'>
+                      {filial.LOJA}
+                    </span>
+                    <span className='w-[50px] text-right'>{filial.ESTOQUE}</span>
+                    <span className='flex-1 text-right'>
+                      {FormatToCurrency(filial.PRECO.toString())}
+                    </span>
+                    <span className='text-gray-500 truncate max-w-[60px]'>
+                      {filial.LOCAL1}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className={`flex w-[10%]`}>
             <Input
               onChange={(e) => {

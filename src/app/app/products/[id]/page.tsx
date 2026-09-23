@@ -1,5 +1,5 @@
-import { iProduto } from '@/@types/Produto';
-import { GetProduct } from '@/app/actions/produto';
+import { iEstoqueLoja, iProduto } from '@/@types/Produto';
+import { GetEstoqueFiliais, GetProduct } from '@/app/actions/produto';
 import { Input } from '@/components/ui/input';
 import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -18,11 +18,15 @@ function parseCurrency(currency: number) {
 
 const ProductDetail = async ({ params }: iProductPage) => {
   const productCode = params.id;
-  const result = await GetProduct(productCode);
+  const [result, estoqueResult] = await Promise.all([
+    GetProduct(productCode),
+    GetEstoqueFiliais(productCode),
+  ]);
 
   if (!result.value) return <p>Failed to load product.</p>;
 
   const produto: iProduto = result.value;
+  const estoqueFiliais: iEstoqueLoja[] = estoqueResult.value || [];
 
   return (
     <section className='flex flex-col gap-4 w-full h-full'>
@@ -108,6 +112,42 @@ const ProductDetail = async ({ params }: iProductPage) => {
           className='w-[10%] tablet-portrait:w-[20%]'
         />
       </div>
+
+      {estoqueFiliais.length > 0 && (
+        <div className='w-full px-5'>
+          <h2 className='text-lg font-bold text-emsoft_dark-text mb-2'>
+            Estoque em Outras Filiais
+          </h2>
+          <div className='overflow-x-auto border rounded'>
+            <table className='w-full text-sm'>
+              <thead className='bg-gray-100'>
+                <tr>
+                  <th className='px-3 py-2 text-left font-bold'>FILIAL</th>
+                  <th className='px-3 py-2 text-right font-bold'>ESTOQUE</th>
+                  <th className='px-3 py-2 text-right font-bold'>PREÇO</th>
+                  <th className='px-3 py-2 text-left font-bold'>LOCAL</th>
+                  <th className='px-3 py-2 text-left font-bold'>ATUALIZAÇÃO</th>
+                </tr>
+              </thead>
+              <tbody>
+                {estoqueFiliais.map((filial, idx) => (
+                  <tr key={idx} className='border-t'>
+                    <td className='px-3 py-2 font-medium'>{filial.LOJA}</td>
+                    <td className='px-3 py-2 text-right'>{filial.ESTOQUE}</td>
+                    <td className='px-3 py-2 text-right'>
+                      {parseCurrency(filial.PRECO)}
+                    </td>
+                    <td className='px-3 py-2'>{filial.LOCAL1}</td>
+                    <td className='px-3 py-2 text-gray-500'>
+                      {filial.ATUALIZACAO}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       <div className='flex gap-4 w-full px-5 py-0 flex-wrap justify-end'>
         <Link

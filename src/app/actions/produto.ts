@@ -4,6 +4,7 @@ import { iApiResult, ResponseType } from '@/@types';
 import { iCliente } from '@/@types/Cliente';
 import { iFilter, iFilterQuery } from '@/@types/Filter';
 import {
+  iEstoqueLoja,
   iListaSimilare,
   iProductPromotion,
   iProduto,
@@ -504,6 +505,49 @@ export async function GetSimilares(productCode: string) {
 
   return {
     value: res.body.value,
+    error: undefined,
+  };
+}
+
+const SQL_ESTOQUE_FILIAIS = (produto: string) =>
+  `SELECT PRODUTO, LOJA, ATUALIZACAO, CURVA_EST, CURVA_FAB, ESTOQUE, MINIMO, MAXIMO, PRECO, LOCAL1, LOCAL2, LOCAL3, PEDIDO FROM ESTOQUE_FILIAIS WHERE PRODUTO = '${assertSafeSQLValue(produto, 'produto')}'`;
+
+export async function GetEstoqueFiliais(
+  productCode: string,
+): Promise<ResponseType<iEstoqueLoja[]>> {
+  const tokenCookie = await getCookie('token_b2b');
+  const sql = SQL_ESTOQUE_FILIAIS(productCode);
+
+  const res = await CustomFetch<any>(
+    `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(sql)}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  if (res.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(res.status),
+        message: res.statusText,
+      },
+    };
+  }
+
+  if (!res.body?.Data || res.body.Data.length === 0) {
+    return {
+      value: [],
+      error: undefined,
+    };
+  }
+
+  return {
+    value: res.body.Data as iEstoqueLoja[],
     error: undefined,
   };
 }

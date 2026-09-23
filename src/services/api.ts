@@ -12,12 +12,18 @@ export async function CustomFetch<T = unknown>(
 ) {
   const data = await fetch(`${BASE_URL}${input}`, init);
 
-  const result = await data.json();
+  const text = await data.text();
+  let result: T;
+  try {
+    result = text ? (JSON.parse(text) as T) : (null as T);
+  } catch {
+    result = null as T;
+  }
 
   const responseData: ResponseData<T> = {
     status: data.status,
     statusText: data.statusText,
-    body: result as T,
+    body: result,
   };
 
   return responseData;

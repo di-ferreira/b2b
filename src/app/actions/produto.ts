@@ -182,15 +182,10 @@ export async function SuperFindProducts(
   filter: iFilter<iProduto>,
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
   const tokenCookie = await getCookie('token_b2b');
-  const bodyReq: iReqSuperBusca = {
-    Palavras: filter?.filter?.[0] ? String(filter.filter[0].value) : '',
-    PularRegistros: filter?.skip ? filter.skip : 0,
-    QuantidadeRegistros: filter?.top ? filter.top : 15,
-  };
-  const URL = `${ROUTE_SUPER_BUSCA}?$expand=FABRICANTE,FORNECEDOR,GRUPO,ListaChaves,ListaSimilares`;
+  const palavras = filter?.filter?.[0] ? encodeURIComponent(String(filter.filter[0].value)) : '';
+  const URL = `${ROUTE_SUPER_BUSCA}?Palavras=${palavras}&PularRegistros=${filter?.skip ?? 0}&QuantidadeRegistros=${filter?.top ?? 15}&$expand=FABRICANTE,FORNECEDOR,GRUPO,ListaChaves,ListaSimilares`;
   const res = await CustomFetch<iApiResult<iProduto[]>>(URL, {
-    method: 'POST',
-    body: JSON.stringify(bodyReq),
+    method: 'GET',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,

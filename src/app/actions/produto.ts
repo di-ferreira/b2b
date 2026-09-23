@@ -183,7 +183,7 @@ export async function SuperFindProducts(
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
   const tokenCookie = await getCookie('token_b2b');
   const bodyReq: iReqSuperBusca = {
-    Palavras: filter?.filter ? String(filter.filter[0].value) : '',
+    Palavras: filter?.filter?.[0] ? String(filter.filter[0].value) : '',
     PularRegistros: filter?.skip ? filter.skip : 0,
     QuantidadeRegistros: filter?.top ? filter.top : 15,
   };

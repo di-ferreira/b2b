@@ -77,83 +77,84 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
 
   async function saveItem(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    let response;
-    let message = '';
-    const itemSave: iItemInserir = {
-      pIdOrcamento: current.ORCAMENTO,
-      pItemOrcamento: {
-        CodigoProduto: WordProducts,
-        Desconto: 0,
-        Frete: 0,
-        Qtd: budgetItem.QTD,
-        Tabela: budgetItem.TABELA,
-        Valor: currentPrice,
-        SubTotal: budgetItem.SUBTOTAL,
-        Total: budgetItem.TOTAL,
-      },
-    };
+    try {
+      let response;
+      let message = '';
+      const itemSave: iItemInserir = {
+        pIdOrcamento: current.ORCAMENTO,
+        pItemOrcamento: {
+          CodigoProduto: WordProducts,
+          Desconto: 0,
+          Frete: 0,
+          Qtd: budgetItem.QTD,
+          Tabela: budgetItem.TABELA,
+          Valor: currentPrice,
+          SubTotal: budgetItem.SUBTOTAL,
+          Total: budgetItem.TOTAL,
+        },
+      };
 
-    if (item !== undefined) {
-      response = await updateItem(itemSave);
-      message = 'Item editado com sucesso';
-    } else {
-      response = await addItem(itemSave);
-      message = 'Item adicionado com sucesso';
-    }
+      if (item !== undefined) {
+        response = await updateItem(itemSave);
+        message = 'Item editado com sucesso';
+      } else {
+        response = await addItem(itemSave);
+        message = 'Item adicionado com sucesso';
+      }
 
-    if (response?.value !== undefined) {
-      setCurrent(response.value as iOrcamento);
+      if (response?.value !== undefined) {
+        setCurrent(response.value as iOrcamento);
+        ToastNotify({
+          message: message,
+          type: 'success',
+        });
+      }
+
+      if (response?.error !== undefined) {
+        ToastNotify({
+          message: `Erro ao adicionar/editar item: ${response.error.message}`,
+          type: 'error',
+        });
+        return;
+      }
+
+      if (CallBack) {
+        CallBack();
+      }
+
+      if (item !== undefined) {
+        if (onCloseModal) onCloseModal();
+      } else {
+        setWordProducts('');
+        clearDetails();
+        setBudgetItem({
+          QTD: 1,
+          VALOR: 0,
+          TOTAL: 0,
+          SUBTOTAL: 0,
+          DESCONTO: 0,
+          TABELA: (current.CLIENTE as iCliente).Tabela || 'SISTEMA',
+          OBS: '',
+          MD5: '',
+          ITEM: 0,
+          PRECO_LIQUIDO: '',
+          IMP_SEPARACAO: '',
+          GORDURA: 0,
+          P_DESC: 0,
+          ID_VALE_CASCO: 0,
+          ORCAMENTO: current.ORCAMENTO,
+          PRODUTO: {} as iProduto,
+        });
+
+        setQtdItem('1');
+        setTimeout(() => inputProductRef.current?.focus(), 100);
+      }
+    } catch (err: any) {
+      console.error('[saveItem] Unexpected error:', err);
       ToastNotify({
-        message: message,
-        type: 'success',
-      });
-    }
-
-    if (response?.error !== undefined) {
-      ToastNotify({
-        message: 'Erro ao adicionar/editar item',
+        message: `Erro inesperado: ${err.message || 'falha ao salvar item'}`,
         type: 'error',
       });
-      return;
-    }
-
-    if (CallBack) {
-      CallBack();
-    }
-
-    if (item !== undefined) {
-      if (onCloseModal) onCloseModal();
-    } else {
-      // 1. Limpa a busca textual
-      setWordProducts('');
-
-      // 2. Limpa a Store (essencial se você usa selectProduct)
-      clearDetails();
-
-      // 3. Reset TOTAL do objeto do item sem manter o estado anterior (...old)
-      setBudgetItem({
-        QTD: 1,
-        VALOR: 0,
-        TOTAL: 0,
-        SUBTOTAL: 0,
-        DESCONTO: 0,
-        TABELA: (current.CLIENTE as iCliente).Tabela || 'SISTEMA',
-        OBS: '',
-        MD5: '',
-        ITEM: 0,
-        PRECO_LIQUIDO: '',
-        IMP_SEPARACAO: '',
-        GORDURA: 0,
-        P_DESC: 0,
-        ID_VALE_CASCO: 0,
-        ORCAMENTO: current.ORCAMENTO,
-        PRODUTO: {} as iProduto, // Isso vai zerar as referências nos inputs disabled
-      });
-
-      setQtdItem('1');
-
-      // 4. Devolve o foco para o campo de busca
-      setTimeout(() => inputProductRef.current?.focus(), 100);
     }
   }
 

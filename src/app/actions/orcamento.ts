@@ -580,12 +580,24 @@ export async function addItem(itemOrcamento: iItemInserir) {
     },
   );
 
-  if (res.body!.StatusCode !== 200) {
+  if (!res.body) {
+    console.error('[addItem] NovoItemOrcamento returned null body:', res.status, res.statusText);
     return {
       value: undefined,
       error: {
-        code: String(res.body!.StatusCode),
-        message: String(res.body!.StatusMessage),
+        code: String(res.status),
+        message: `API retornou resposta vazia (${res.status})`,
+      },
+    };
+  }
+
+  if (res.body.StatusCode !== 200) {
+    console.error('[addItem] NovoItemOrcamento error:', res.body.StatusCode, res.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(res.body.StatusCode),
+        message: String(res.body.StatusMessage),
       },
     };
   }
@@ -626,12 +638,24 @@ export async function updateItem(itemOrcamento: iItemInserir) {
     },
   );
 
-  if (removeResult.body!.StatusCode !== 200) {
+  if (!removeResult.body) {
+    console.error('[updateItem] ExcluirItemOrcamento returned null body:', removeResult.status, removeResult.statusText);
     return {
       value: undefined,
       error: {
-        code: String(removeResult.body!.StatusCode),
-        message: String(removeResult.body!.StatusMessage),
+        code: String(removeResult.status),
+        message: `API retornou resposta vazia ao excluir item (${removeResult.status})`,
+      },
+    };
+  }
+
+  if (removeResult.body.StatusCode !== 200) {
+    console.error('[updateItem] ExcluirItemOrcamento error:', removeResult.body.StatusCode, removeResult.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(removeResult.body.StatusCode),
+        message: String(removeResult.body.StatusMessage),
       },
     };
   }
@@ -648,12 +672,24 @@ export async function updateItem(itemOrcamento: iItemInserir) {
     },
   );
 
-  if (resultSave.body!.StatusCode !== 200) {
+  if (!resultSave.body) {
+    console.error('[updateItem] NovoItemOrcamento returned null body:', resultSave.status, resultSave.statusText);
     return {
       value: undefined,
       error: {
-        code: String(resultSave.body!.StatusCode),
-        message: String(resultSave.body!.StatusMessage),
+        code: String(resultSave.status),
+        message: `API retornou resposta vazia ao salvar item (${resultSave.status})`,
+      },
+    };
+  }
+
+  if (resultSave.body.StatusCode !== 200) {
+    console.error('[updateItem] NovoItemOrcamento error:', resultSave.body.StatusCode, resultSave.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(resultSave.body.StatusCode),
+        message: String(resultSave.body.StatusMessage),
       },
     };
   }

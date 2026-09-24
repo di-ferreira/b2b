@@ -1,6 +1,6 @@
 'use server';
 
-import { iApiResult, iSelectSQL } from '@/@types';
+import { iApiResult } from '@/@types';
 import { iFilter } from '@/@types/Filter';
 import { iMovimentoEventos } from '@/@types/MovimentosEventos';
 import {
@@ -174,7 +174,7 @@ export async function GetFormasPGTO() {
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iFormaPgto[]>>(
-    `${ROUTE_SELECT_SQL}?pSQL=${SQL_FORMA_PGTO}`,
+    `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(SQL_FORMA_PGTO)}`,
     {
       method: 'GET',
       headers: {
@@ -184,18 +184,30 @@ export async function GetFormasPGTO() {
     },
   );
 
-  if (response.body!.StatusCode !== 200) {
+  if (!response.body) {
+    console.error('[GetFormasPGTO] SelectSQL returned null body:', response.status, response.statusText);
     return {
       value: undefined,
       error: {
-        code: String(response.body!.StatusCode),
-        message: String(response.body!.StatusMessage),
+        code: String(response.status),
+        message: `API retornou resposta vazia (${response.status})`,
+      },
+    };
+  }
+
+  if (response.body.StatusCode !== 200) {
+    console.error('[GetFormasPGTO] SelectSQL error:', response.body.StatusCode, response.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(response.body.StatusCode),
+        message: String(response.body.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body!.Data,
+    value: response.body.Data,
     error: undefined,
   };
 }
@@ -203,19 +215,13 @@ export async function GetFormasPGTO() {
 export async function GetCondicaoPGTO(valor: number, tabela: string) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const body: string = JSON.stringify({
-    pSQL: SQL_CONDICAO_PGTO,
-    pPar: [
-      { ParamName: 'VALOR', ParamType: 'ftInteger', ParamValues: [valor] },
-      { ParamName: 'TABELA', ParamType: 'ftString', ParamValues: [tabela] },
-    ],
-  } as iSelectSQL);
+  const sql = SQL_CONDICAO_PGTO.replace(':VALOR', String(valor)).replace(':TABELA', `'${tabela}'`);
+  const encodedSQL = encodeURIComponent(sql);
 
   const response = await CustomFetch<iApiResult<iCondicaoPgto[]>>(
-    `${ROUTE_SELECT_SQL}`,
+    `${ROUTE_SELECT_SQL}?pSQL=${encodedSQL}`,
     {
-      method: 'POST',
-      body: body,
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `bearer ${tokenCookie}`,
@@ -223,18 +229,30 @@ export async function GetCondicaoPGTO(valor: number, tabela: string) {
     },
   );
 
-  if (response.body!.StatusCode !== 200) {
+  if (!response.body) {
+    console.error('[GetCondicaoPGTO] SelectSQL returned null body:', response.status, response.statusText);
     return {
       value: undefined,
       error: {
-        code: String(response.body!.StatusCode),
-        message: String(response.body!.StatusMessage),
+        code: String(response.status),
+        message: `API retornou resposta vazia (${response.status})`,
+      },
+    };
+  }
+
+  if (response.body.StatusCode !== 200) {
+    console.error('[GetCondicaoPGTO] SelectSQL error:', response.body.StatusCode, response.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(response.body.StatusCode),
+        message: String(response.body.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body!.Data,
+    value: response.body.Data,
     error: undefined,
   };
 }
@@ -243,7 +261,7 @@ export async function GetTransport() {
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iApiResult<iTransportadora[]>>(
-    `${ROUTE_SELECT_SQL}?pSQL=${SQL_TRANSPORTADORA}`,
+    `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(SQL_TRANSPORTADORA)}`,
     {
       method: 'GET',
       headers: {
@@ -253,18 +271,30 @@ export async function GetTransport() {
     },
   );
 
-  if (response.body!.StatusCode !== 200) {
+  if (!response.body) {
+    console.error('[GetTransport] SelectSQL returned null body:', response.status, response.statusText);
     return {
       value: undefined,
       error: {
-        code: String(response.body!.StatusCode),
-        message: String(response.body!.StatusMessage),
+        code: String(response.status),
+        message: `API retornou resposta vazia (${response.status})`,
+      },
+    };
+  }
+
+  if (response.body.StatusCode !== 200) {
+    console.error('[GetTransport] SelectSQL error:', response.body.StatusCode, response.body.StatusMessage);
+    return {
+      value: undefined,
+      error: {
+        code: String(response.body.StatusCode),
+        message: String(response.body.StatusMessage),
       },
     };
   }
 
   return {
-    value: response.body!.Data,
+    value: response.body.Data,
     error: undefined,
   };
 }

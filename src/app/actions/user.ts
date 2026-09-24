@@ -153,7 +153,7 @@ async function getCliente(data: {
       data.user
     }' or CIC eq '${RemoveSpecialCharacter(
       data.user,
-    )}'&$expand=Telefones, AgendamentosList, PendenciasList`,
+    )}'`,
     {
       method: 'GET',
       headers: {

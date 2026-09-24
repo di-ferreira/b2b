@@ -15,7 +15,7 @@ export const returnExpiresTimes = (minutes: number) => {
   const seconds = minutes * 60;
   const milliseconds = seconds * 1000;
 
-  return now.setTime(now.getTime() + milliseconds);
+  return new Date(now.getTime() + milliseconds);
 };
 
 export function generateHash(password: string): string {

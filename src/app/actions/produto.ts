@@ -249,43 +249,71 @@ export async function GetProducts(
   };
 }
 
-const SQL_SEARCH_PRODUCTS = (word: string) =>
-  `SELECT PRODUTO, REFERENCIA, NOME, PRECO, QTDATUAL, VENDA, TRANCAR, ATIVO, APLICACOES, FABRICANTE FROM EST WHERE (PRODUTO LIKE '%${word}%' OR REFERENCIA LIKE '%${word}%' OR NOME LIKE '%${word}%' OR APLICACOES LIKE '%${word}%') AND (VENDA = 'S' OR VENDA IS NULL) AND TRANCAR = 'N' AND ATIVO = 'S' ORDER BY PRODUTO`;
+const SQL_SEARCH_PRODUCTS_FILTER = (word: string) =>
+  `(E.PRODUTO LIKE '%${word}%' OR E.REFERENCIA LIKE '%${word}%' OR E.NOME LIKE '%${word}%' OR E.APLICACOES LIKE '%${word}%') AND (E.VENDA = 'S' OR E.VENDA IS NULL) AND E.TRANCAR = 'N' AND E.ATIVO = 'S'`;
+
+const SQL_SEARCH_PRODUCTS = (word: string, top: number, skip: number) =>
+  `SELECT FIRST ${top} SKIP ${skip} E.PRODUTO, E.REFERENCIA, E.NOME, E.PRECO, E.QTDATUAL, E.VENDA, E.TRANCAR, E.ATIVO, E.APLICACOES, E.CODIGOBARRA, E.LOCAL, E.FABRICANTE, F.NOME AS FABRICANTE_NOME FROM EST E LEFT JOIN FAB F ON E.FABRICANTE = F.FABRICANTE WHERE ${SQL_SEARCH_PRODUCTS_FILTER(word)} ORDER BY E.PRODUTO`;
+
+const SQL_COUNT_PRODUCTS = (word: string) =>
+  `SELECT COUNT(*) AS TOTAL FROM EST E WHERE ${SQL_SEARCH_PRODUCTS_FILTER(word)}`;
 
 export async function SearchProductsViaSQL(
   word: string,
+  top = 15,
+  skip = 0,
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
   const tokenCookie = await getCookie('token_b2b');
   const safe = word.replace(/'/g, '').substring(0, 50);
-  const sql = SQL_SEARCH_PRODUCTS(safe);
-  const encoded = encodeURIComponent(sql);
 
-  const res = await CustomFetch<{ Data: iProduto[] }>(
-    `${ROUTE_SELECT_SQL}?pSQL=${encoded}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `bearer ${tokenCookie}`,
+  const [dataRes, countRes] = await Promise.all([
+    CustomFetch<{ Data: Record<string, unknown>[] }>(
+      `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(SQL_SEARCH_PRODUCTS(safe, top, skip))}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${tokenCookie}`,
+        },
       },
-    },
-  );
+    ),
+    CustomFetch<{ Data: { TOTAL: number }[] }>(
+      `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(SQL_COUNT_PRODUCTS(safe))}`,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${tokenCookie}`,
+        },
+      },
+    ),
+  ]);
 
-  if (res.status !== 200) {
+  if (dataRes.status !== 200) {
     return {
       value: undefined,
       error: {
-        code: String(res.status),
-        message: String(res.statusText),
+        code: String(dataRes.status),
+        message: String(dataRes.statusText),
       },
     };
   }
 
-  const data = res.body?.Data || [];
+  const raw = dataRes.body?.Data || [];
+  const total = countRes.body?.Data?.[0]?.TOTAL ?? raw.length;
+
+  const mapped = raw.map((row: Record<string, unknown>) => ({
+    ...row,
+    FABRICANTE: {
+      FABRICANTE: row.FABRICANTE,
+      NOME: (row.FABRICANTE_NOME as string) || '',
+    },
+  })) as unknown as iProduto[];
+
   return {
     value: {
-      value: data as iProduto[],
-      Qtd_Registros: data.length,
+      value: mapped,
+      Qtd_Registros: total,
     },
     error: undefined,
   };

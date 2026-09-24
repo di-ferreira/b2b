@@ -1,9 +1,9 @@
 'use client';
 import { iSearch, ResponseType } from '@/@types';
-import { iFilter, iFilterQuery } from '@/@types/Filter';
+import { iFilter } from '@/@types/Filter';
 import { iProduto } from '@/@types/Produto';
 import { iDataResultTable } from '@/@types/Table';
-import { SuperFindProducts } from '@/app/actions/produto';
+import { SearchProductsViaSQL } from '@/app/actions/produto';
 import { DataTable } from '@/components/CustomDataTable';
 import ErrorMessage from '@/components/ErrorMessage';
 import Filter from '@/components/Filter';
@@ -20,33 +20,12 @@ function DataTableProducts() {
   const [loading, setLoading] = useState(false);
   const [WordProducts, setWordProducts] = useState<string>('');
 
-  const MountQueryFilter = (
-    filter: iSearch<iProduto>
-  ): iFilterQuery<iProduto>[] => {
-    let listFilter: iFilterQuery<iProduto>[] = [];
-
-    if (filter.value !== '') {
-      listFilter = [
-        {
-          key: filter.filterBy as keyof iProduto,
-          value: filter.value,
-        },
-      ];
-    }
-    return listFilter;
-  };
-
   const handleProductSearch = (filter: iSearch<iProduto>) => {
     setLoading(true);
     setWordProducts(filter.value);
 
-    SuperFindProducts({
-      top: 15,
-      skip: 0,
-      orderBy: 'PRODUTO',
-      filter: MountQueryFilter(filter),
-    })
-      .then(async (products: ResponseType<iDataResultTable<iProduto>>) => {
+    SearchProductsViaSQL(filter.value.toUpperCase(), 15, 0)
+      .then((products: ResponseType<iDataResultTable<iProduto>>) => {
         if (products.value !== undefined) {
           setData((old) => (old = products));
         }
@@ -65,13 +44,12 @@ function DataTableProducts() {
   const handleProduct = (filter: iFilter<iProduto>) => {
     setLoading(true);
 
-    SuperFindProducts({
-      top: filter.top,
-      skip: filter.skip,
-      orderBy: 'PRODUTO',
-      filter: [{ key: 'PRODUTO', value: WordProducts }],
-    })
-      .then(async (products: ResponseType<iDataResultTable<iProduto>>) => {
+    SearchProductsViaSQL(
+      WordProducts.toUpperCase(),
+      filter.top,
+      filter.skip,
+    )
+      .then((products: ResponseType<iDataResultTable<iProduto>>) => {
         if (products.value !== undefined) {
           setData((old) => (old = products));
         }

@@ -92,7 +92,7 @@ export function TablePagination<T>({
   };
 
   const GoToPrevPage = () => {
-    if (PaginationOptions.CurrentPage < PaginationOptions.TotalPages) {
+    if (PaginationOptions.CurrentPage > 1) {
       const pagination = {
         ...PaginationOptions,
         CurrentPage: PaginationOptions.CurrentPage - 1,

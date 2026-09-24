@@ -9,9 +9,9 @@ import {
   GetEstoqueFiliais,
   GetNewPriceFromTable,
   GetProductPromotion,
-  GetProducts,
   GetSaleHistory,
   GetSimilares,
+  SearchProductsViaSQL,
 } from '@/app/actions/produto';
 import { create } from 'zustand';
 
@@ -68,49 +68,7 @@ const useProductStore = create<ProductStore>((set, get) => ({
   searchProducts: async (word) => {
     set({ isLoading: true });
     try {
-      const response = await GetProducts({
-        top: 50,
-        skip: 0,
-        orderBy: 'PRODUTO',
-        filter: [
-          { key: 'PRODUTO', value: word.toUpperCase(), typeSearch: 'like' },
-          {
-            key: 'REFERENCIA',
-            value: word.toUpperCase(),
-            typeSearch: 'like',
-            typeCondition: 'or',
-          },
-          {
-            key: 'NOME',
-            value: word.toUpperCase(),
-            typeSearch: 'like',
-            typeCondition: 'or',
-          },
-          {
-            key: 'APLICACOES',
-            value: word.toUpperCase(),
-            typeSearch: 'like',
-            typeCondition: 'or',
-          },
-          {
-            key: 'VENDA',
-            value: 'S',
-            typeCondition: 'or',
-            typeSearch: 'eq',
-            groupOperator: 'or',
-          },
-          {
-            key: 'VENDA',
-            value: null,
-            typeCondition: 'or',
-            typeSearch: 'eq',
-            groupOperator: 'or',
-          },
-          { key: 'TRANCAR', value: 'N', typeCondition: 'and', typeSearch: 'eq' },
-          { key: 'ATIVO', value: 'S', typeCondition: 'and', typeSearch: 'eq' },
-        ],
-      });
-
+      const response = await SearchProductsViaSQL(word.toUpperCase());
       const list = response.value?.value || [];
       set({ searchResult: list, isLoading: false });
       return list;

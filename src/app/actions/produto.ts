@@ -249,6 +249,48 @@ export async function GetProducts(
   };
 }
 
+const SQL_SEARCH_PRODUCTS = (word: string) =>
+  `SELECT PRODUTO, REFERENCIA, NOME, PRECO, QTDATUAL, VENDA, TRANCAR, ATIVO, APLICACOES, FABRICANTE FROM EST WHERE (PRODUTO LIKE '%${word}%' OR REFERENCIA LIKE '%${word}%' OR NOME LIKE '%${word}%' OR APLICACOES LIKE '%${word}%') AND (VENDA = 'S' OR VENDA IS NULL) AND TRANCAR = 'N' AND ATIVO = 'S' ORDER BY PRODUTO`;
+
+export async function SearchProductsViaSQL(
+  word: string,
+): Promise<ResponseType<iDataResultTable<iProduto>>> {
+  const tokenCookie = await getCookie('token_b2b');
+  const safe = word.replace(/'/g, '').substring(0, 50);
+  const sql = SQL_SEARCH_PRODUCTS(safe);
+  const encoded = encodeURIComponent(sql);
+
+  const res = await CustomFetch<{ Data: iProduto[] }>(
+    `${ROUTE_SELECT_SQL}?SQL=${encoded}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  if (res.status !== 200) {
+    return {
+      value: undefined,
+      error: {
+        code: String(res.status),
+        message: String(res.statusText),
+      },
+    };
+  }
+
+  const data = res.body?.Data || [];
+  return {
+    value: {
+      value: data as iProduto[],
+      Qtd_Registros: data.length,
+    },
+    error: undefined,
+  };
+}
+
 export async function GetProduct(productCode: string) {
   const tokenCookie = await getCookie('token_b2b');
   const productScape = encodeURIComponent(productCode);

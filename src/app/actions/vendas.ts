@@ -45,7 +45,7 @@ const CreateFilter = async (filter: iFilter<iMovimento>): Promise<string> => {
 
   ResultFilter !== '' && (ResultTop = `&${ResultTop}`);
 
-  const ResultRoute: string = `?${ResultFilter}${ResultTop}${ResultSkip}${ResultOrderBy}&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+  const ResultRoute: string = `?${ResultFilter}${ResultTop}${ResultSkip}${ResultOrderBy}&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR`;
 
   return ResultRoute;
 };
@@ -56,7 +56,7 @@ export async function GetVendas(filter: iFilter<iMovimento>) {
 
   const FILTER = filter
     ? await CreateFilter(filter)
-    : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+    : `?$filter=CLIENTE eq ${ClienteLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=15&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;
@@ -204,7 +204,7 @@ export async function getDataTotalVenda() {
 export async function GetVendaById(id: number) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const FILTER = `('${id}')?$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+  const FILTER = `('${id}')?$expand=CLIENTE,VENDEDOR`;
 
   const response = await CustomFetch<iMovimento>(
     `${ROUTE_GET_ALL_PRE_VENDA}${FILTER}`,
@@ -237,7 +237,7 @@ export async function getLastVenda() {
   const VendedorLocal: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');
 
-  const FILTER = `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=1&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR,Itens_List,Itens_List/PRODUTO`;
+  const FILTER = `?$filter=VENDEDOR eq ${VendedorLocal} and TIPOMOV eq 'VENDA' and CANCELADO eq 'N'&$top=1&$inlinecount=allpages&$orderby=DATA desc&$expand=CLIENTE,VENDEDOR`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;

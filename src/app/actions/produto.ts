@@ -261,7 +261,7 @@ export async function SearchProductsViaSQL(
   const encoded = encodeURIComponent(sql);
 
   const res = await CustomFetch<{ Data: iProduto[] }>(
-    `${ROUTE_SELECT_SQL}?SQL=${encoded}`,
+    `${ROUTE_SELECT_SQL}?pSQL=${encoded}`,
     {
       method: 'GET',
       headers: {

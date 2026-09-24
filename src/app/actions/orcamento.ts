@@ -30,18 +30,16 @@ const ROUTE_REMOVE_ITEM_ORCAMENTO = '/ServiceVendas/ExcluirItemOrcamento';
 const ROUTE_SAVE_ITEM_ORCAMENTO = '/ServiceVendas/NovoItemOrcamento';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 
-const SQL_ORCAMENTO_PRODUCTS = (orcamentoId: number) =>
-  `SELECT e.PRODUTO, e.REFERENCIA, e.NOME, e.PRECO, e.QTDATUAL, e.QTD_GARANTIA, e.APLICACOES, e.VENDA, e.TRANCAR, e.ATIVO, e.FABRICANTE FROM EST e WHERE e.PRODUTO IN (SELECT PRODUTO FROM ORCAMENTO_ITENS WHERE ORCAMENTO = ${orcamentoId})`;
-
-async function loadProductDataForItems(
+async function loadOrcamentoItems(
   orcamentoId: number,
-): Promise<Record<string, iProduto>> {
+): Promise<iItensOrcamento[]> {
   const tokenCookie = await getCookie('token_b2b');
-  const sql = SQL_ORCAMENTO_PRODUCTS(orcamentoId);
-  const encoded = encodeURIComponent(sql);
 
-  const res = await CustomFetch<{ Data: iProduto[] }>(
-    `${ROUTE_SELECT_SQL}?SQL=${encoded}`,
+  const sqlItems = `SELECT ORCAMENTO, PRODUTO, QTD, VALOR, TOTAL, SUBTOTAL, DESCONTO, TABELA, OBS, MD5, ITEM, PRECO_LIQUIDO, ID_VALE_CASCO, IMP_SEPARACAO, P_DESC, GORDURA FROM IOC WHERE ORCAMENTO = ${orcamentoId}`;
+  const encodedItems = encodeURIComponent(sqlItems);
+
+  const resItems = await CustomFetch<{ Data: any[] }>(
+    `${ROUTE_SELECT_SQL}?pSQL=${encodedItems}`,
     {
       method: 'GET',
       headers: {
@@ -51,15 +49,39 @@ async function loadProductDataForItems(
     },
   );
 
-  if (res.status !== 200 || !res.body?.Data) {
-    return {};
+  if (resItems.status !== 200 || !resItems.body?.Data?.length) {
+    return [];
   }
 
-  const map: Record<string, iProduto> = {};
-  for (const prod of res.body.Data) {
-    map[prod.PRODUTO] = prod as iProduto;
+  const productCodes = resItems.body.Data.map((item) => item.PRODUTO);
+  const codesIn = productCodes.map((c) => `'${c}'`).join(',');
+
+  const sqlProducts = `SELECT PRODUTO, REFERENCIA, NOME, PRECO, QTDATUAL, QTD_GARANTIA, APLICACOES, VENDA, TRANCAR, ATIVO, FABRICANTE FROM EST WHERE PRODUTO IN (${codesIn})`;
+  const encodedProducts = encodeURIComponent(sqlProducts);
+
+  const resProducts = await CustomFetch<{ Data: any[] }>(
+    `${ROUTE_SELECT_SQL}?pSQL=${encodedProducts}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  const productMap: Record<string, iProduto> = {};
+  if (resProducts.status === 200 && resProducts.body?.Data) {
+    for (const prod of resProducts.body.Data) {
+      productMap[prod.PRODUTO] = prod as iProduto;
+    }
   }
-  return map;
+
+  return resItems.body.Data.map((item) => ({
+    ...item,
+    ORCAMENTO: orcamentoId,
+    PRODUTO: productMap[item.PRODUTO] || (item.PRODUTO as unknown as iProduto),
+  }));
 }
 
 export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
@@ -67,7 +89,7 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
   const ClienteLocal: string = await getCookie('user_b2b');
 
   const response = await CustomFetch<iResultApi<iOrcamento>>(
-    `${ROUTE_GET_ALL_ORCAMENTO}?$filter=(PV eq 'N' or PV eq null) and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE,ItensOrcamento`,
+    `${ROUTE_GET_ALL_ORCAMENTO}?$filter=(PV eq 'N' or PV eq null) and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE`,
     {
       method: 'GET',
       headers: {
@@ -99,19 +121,7 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
     };
   }
 
-  const productMap = await loadProductDataForItems(result.ORCAMENTO);
-
-  const itensOrcs: iItensOrcamento[] = result.ItensOrcamento.map((item) => {
-    const prodCode =
-      typeof item.PRODUTO === 'string'
-        ? item.PRODUTO
-        : item.PRODUTO?.PRODUTO;
-    return {
-      ...item,
-      ORCAMENTO: result.ORCAMENTO,
-      PRODUTO: (prodCode && productMap[prodCode]) || item.PRODUTO,
-    };
-  });
+  const itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
 
   return {
     value: {
@@ -247,7 +257,7 @@ export async function GetOrcamento(
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iOrcamento>(
-    `${ROUTE_GET_ALL_ORCAMENTO}(${OrcamentoNumber})?$expand=VENDEDOR,CLIENTE,ItensOrcamento`,
+    `${ROUTE_GET_ALL_ORCAMENTO}(${OrcamentoNumber})?$expand=VENDEDOR,CLIENTE`,
     {
       method: 'GET',
       headers: {
@@ -269,21 +279,7 @@ export async function GetOrcamento(
     };
   }
 
-  const productMap = await loadProductDataForItems(result.ORCAMENTO);
-
-  const itensOrcs: iItensOrcamento[] = response.body!.ItensOrcamento.map(
-    (item) => {
-      const prodCode =
-        typeof item.PRODUTO === 'string'
-          ? item.PRODUTO
-          : item.PRODUTO?.PRODUTO;
-      return {
-        ...item,
-        ORCAMENTO: response.body!.ORCAMENTO,
-        PRODUTO: (prodCode && productMap[prodCode]) || item.PRODUTO,
-      };
-    },
-  );
+  const itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
 
   return {
     value: {

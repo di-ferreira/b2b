@@ -310,6 +310,52 @@ export async function GetOrcamento(
   };
 }
 
+async function resolveVendedor(clienteId: number, clienteVendedor: number): Promise<number> {
+  if (clienteVendedor && clienteVendedor > 0) {
+    return clienteVendedor;
+  }
+
+  const tokenCookie = await getCookie('token_b2b');
+
+  const sql = `SELECT VENDEDOR FROM ORC WHERE CLIENTE = ${clienteId} AND VENDEDOR > 0 ORDER BY ORCAMENTO DESC`;
+  const encoded = encodeURIComponent(sql);
+
+  const res = await CustomFetch<{ Data: any[] }>(
+    `${ROUTE_SELECT_SQL}?pSQL=${encoded}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  if (res.status === 200 && res.body?.Data?.length) {
+    return res.body.Data[0].VENDEDOR;
+  }
+
+  const sqlFallback = `SELECT VENDEDOR FROM VEN WHERE ATIVO = 'S'`;
+  const encodedFallback = encodeURIComponent(sqlFallback);
+
+  const resFallback = await CustomFetch<{ Data: any[] }>(
+    `${ROUTE_SELECT_SQL}?pSQL=${encodedFallback}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  if (resFallback.status === 200 && resFallback.body?.Data?.length) {
+    return resFallback.body.Data[0].VENDEDOR;
+  }
+
+  throw new Error('No valid vendedor found for client or system');
+}
+
 export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token_b2b');
 
@@ -323,9 +369,20 @@ export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
   }
   const cliente: iCliente = clienteResult.value;
 
+  let vendedor: number;
+  try {
+    vendedor = await resolveVendedor(cliente.CLIENTE, cliente.VENDEDOR);
+  } catch (err) {
+    console.error('[NewOrcamento] resolveVendedor failed:', err);
+    return {
+      value: undefined,
+      error: { code: '500', message: 'Failed to resolve vendedor' },
+    };
+  }
+
   const OrcamentoInsert: iOrcamentoInserir = {
     CodigoCliente: cliente.CLIENTE,
-    CodigoVendedor1: cliente.VENDEDOR,
+    CodigoVendedor1: vendedor,
     Total: 0,
     SubTotal: 0,
     Itens: [],

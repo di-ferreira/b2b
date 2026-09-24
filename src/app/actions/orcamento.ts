@@ -568,7 +568,7 @@ export async function removeItem(
 
 export async function addItem(itemOrcamento: iItemInserir) {
   const tokenCookie = await getCookie('token_b2b');
-  const res = await CustomFetch<iApiResult<iOrcamento>>(
+  const res = await CustomFetch<{ error?: { code: string; message: string } }>(
     ROUTE_SAVE_ITEM_ORCAMENTO,
     {
       body: JSON.stringify(itemOrcamento),
@@ -591,13 +591,13 @@ export async function addItem(itemOrcamento: iItemInserir) {
     };
   }
 
-  if (res.body.StatusCode !== 200) {
-    console.error('[addItem] NovoItemOrcamento error:', res.body.StatusCode, res.body.StatusMessage);
+  if (res.body.error) {
+    console.error('[addItem] NovoItemOrcamento error:', res.body.error.code, res.body.error.message);
     return {
       value: undefined,
       error: {
-        code: String(res.body.StatusCode),
-        message: String(res.body.StatusMessage),
+        code: res.body.error.code,
+        message: res.body.error.message,
       },
     };
   }
@@ -623,7 +623,7 @@ export async function addItem(itemOrcamento: iItemInserir) {
 export async function updateItem(itemOrcamento: iItemInserir) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const removeResult = await CustomFetch<iApiResult<iOrcamento>>(
+  const removeResult = await CustomFetch<{ error?: { code: string; message: string } }>(
     ROUTE_REMOVE_ITEM_ORCAMENTO,
     {
       body: JSON.stringify({
@@ -649,18 +649,18 @@ export async function updateItem(itemOrcamento: iItemInserir) {
     };
   }
 
-  if (removeResult.body.StatusCode !== 200) {
-    console.error('[updateItem] ExcluirItemOrcamento error:', removeResult.body.StatusCode, removeResult.body.StatusMessage);
+  if (removeResult.body.error) {
+    console.error('[updateItem] ExcluirItemOrcamento error:', removeResult.body.error.code, removeResult.body.error.message);
     return {
       value: undefined,
       error: {
-        code: String(removeResult.body.StatusCode),
-        message: String(removeResult.body.StatusMessage),
+        code: removeResult.body.error.code,
+        message: removeResult.body.error.message,
       },
     };
   }
 
-  const resultSave = await CustomFetch<iApiResult<iOrcamento>>(
+  const resultSave = await CustomFetch<{ error?: { code: string; message: string } }>(
     ROUTE_SAVE_ITEM_ORCAMENTO,
     {
       body: JSON.stringify(itemOrcamento),
@@ -683,13 +683,13 @@ export async function updateItem(itemOrcamento: iItemInserir) {
     };
   }
 
-  if (resultSave.body.StatusCode !== 200) {
-    console.error('[updateItem] NovoItemOrcamento error:', resultSave.body.StatusCode, resultSave.body.StatusMessage);
+  if (resultSave.body.error) {
+    console.error('[updateItem] NovoItemOrcamento error:', resultSave.body.error.code, resultSave.body.error.message);
     return {
       value: undefined,
       error: {
-        code: String(resultSave.body.StatusCode),
-        message: String(resultSave.body.StatusMessage),
+        code: resultSave.body.error.code,
+        message: resultSave.body.error.message,
       },
     };
   }

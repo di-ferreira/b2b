@@ -49,7 +49,12 @@ async function loadOrcamentoItems(
     },
   );
 
-  if (resItems.status !== 200 || !resItems.body?.Data?.length) {
+  if (resItems.status !== 200) {
+    console.error('[loadOrcamentoItems] IOC query failed:', resItems.status, JSON.stringify(resItems.body)?.slice(0, 300));
+    return [];
+  }
+
+  if (!resItems.body?.Data?.length) {
     return [];
   }
 
@@ -75,6 +80,8 @@ async function loadOrcamentoItems(
     for (const prod of resProducts.body.Data) {
       productMap[prod.PRODUTO] = prod as iProduto;
     }
+  } else {
+    console.error('[loadOrcamentoItems] EST query failed:', resProducts.status, JSON.stringify(resProducts.body)?.slice(0, 300));
   }
 
   return resItems.body.Data.map((item) => ({
@@ -99,19 +106,8 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
     },
   );
 
-  const result: iOrcamento = response.body.value[0];
-
-  if (result === undefined) {
-    return {
-      value: undefined,
-      error: {
-        code: '404',
-        message: 'Not Found',
-      },
-    };
-  }
-
   if (response.status !== 200) {
+    console.error('[LoadOrcamento] API error:', response.status, response.statusText, JSON.stringify(response.body)?.slice(0, 500));
     return {
       value: undefined,
       error: {
@@ -121,7 +117,25 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
     };
   }
 
-  const itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
+  const result: iOrcamento | undefined = response.body?.value?.[0];
+
+  if (result === undefined) {
+    console.error('[LoadOrcamento] No orcamento found for CLIENTE:', ClienteLocal, 'body:', JSON.stringify(response.body)?.slice(0, 300));
+    return {
+      value: undefined,
+      error: {
+        code: '404',
+        message: 'Not Found',
+      },
+    };
+  }
+
+  let itensOrcs: iItensOrcamento[] = [];
+  try {
+    itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
+  } catch (err) {
+    console.error('[LoadOrcamento] loadOrcamentoItems failed:', err);
+  }
 
   return {
     value: {
@@ -267,9 +281,8 @@ export async function GetOrcamento(
     },
   );
 
-  const result: iOrcamento = response.body!;
-
-  if (response.status !== 200) {
+  if (response.status !== 200 || !response.body) {
+    console.error('[GetOrcamento] API error for ORC:', OrcamentoNumber, response.status, JSON.stringify(response.body)?.slice(0, 300));
     return {
       value: undefined,
       error: {
@@ -279,7 +292,14 @@ export async function GetOrcamento(
     };
   }
 
-  const itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
+  const result: iOrcamento = response.body;
+
+  let itensOrcs: iItensOrcamento[] = [];
+  try {
+    itensOrcs = await loadOrcamentoItems(result.ORCAMENTO);
+  } catch (err) {
+    console.error('[GetOrcamento] loadOrcamentoItems failed:', err);
+  }
 
   return {
     value: {
@@ -293,7 +313,15 @@ export async function GetOrcamento(
 export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token_b2b');
 
-  const cliente: iCliente = (await getClienteAction()).value!;
+  const clienteResult = await getClienteAction();
+  if (!clienteResult.value) {
+    console.error('[NewOrcamento] getClienteAction failed:', clienteResult.error);
+    return {
+      value: undefined,
+      error: clienteResult.error || { code: '500', message: 'Failed to get client' },
+    };
+  }
+  const cliente: iCliente = clienteResult.value;
 
   const OrcamentoInsert: iOrcamentoInserir = {
     CodigoCliente: cliente.CLIENTE,
@@ -315,12 +343,13 @@ export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
     },
   );
 
-  if (responseInsert.body.StatusCode !== 200) {
+  if (responseInsert.status !== 200 || responseInsert.body?.StatusCode !== 200) {
+    console.error('[NewOrcamento] POST NovoOrcamento failed:', responseInsert.status, JSON.stringify(responseInsert.body)?.slice(0, 300));
     return {
       value: undefined,
       error: {
-        code: String(responseInsert.body.StatusCode),
-        message: String(responseInsert.body.StatusMessage),
+        code: String(responseInsert.body?.StatusCode || responseInsert.status),
+        message: String(responseInsert.body?.StatusMessage || responseInsert.statusText),
       },
     };
   }
@@ -328,6 +357,7 @@ export async function NewOrcamento(): Promise<ResponseType<iOrcamento>> {
   const response = await GetOrcamento(responseInsert.body.Data.ORCAMENTO);
 
   if (response.error !== undefined) {
+    console.error('[NewOrcamento] GetOrcamento failed:', response.error);
     return {
       value: undefined,
       error: {

@@ -119,3 +119,9 @@ export function assertSafeSQLValue(value: unknown, field: string): string {
   return str;
 }
 
+export function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'string') return error;
+  return String(error);
+}
+

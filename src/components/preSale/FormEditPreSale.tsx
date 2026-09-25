@@ -1,5 +1,6 @@
 'use client';
-import { iCliente } from '@/@types/Cliente';
+import { iCliente, iFinanceiroCliente } from '@/@types/Cliente';
+import { iOrcamento } from '@/@types/Orcamento';
 import {
   iCondicaoPgto,
   iFormaPgto,
@@ -8,12 +9,17 @@ import {
   iPreVenda,
 } from '@/@types/PreVenda';
 import { iVendedor } from '@/@types/Vendedor';
+import { GetFinanceiroCliente } from '@/app/actions/cliente';
+import { Liberacoes } from '@/app/actions/liberacoes';
+import { UpdateOrcamento } from '@/app/actions/orcamento';
 import {
   GetCondicaoPGTO,
   GetFormasPGTO,
   SavePreVenda,
 } from '@/app/actions/preVenda';
-import { cn } from '@/lib/utils';
+import { getVendedorAction } from '@/app/actions/vendedor';
+import { getBloqueios } from '@/lib/bloqueios';
+import { cn, FormatToCurrency, getErrorMessage } from '@/lib/utils';
 import useBudget from '@/store/BudgetStore';
 import {
   faFileInvoiceDollar,
@@ -113,10 +119,13 @@ const FormEditPreSale = () => {
 
   function getCondicao() {
     if (current.TOTAL > 0) {
-      const tabela = (current.CLIENTE as iCliente)?.Tabela || 'SISTEMA';
+      const cliente = current.CLIENTE as iCliente;
+      const tabela = cliente?.Tabela || 'SISTEMA';
+      const somenteAvista = cliente?.CARTEIRA === 'N';
       GetCondicaoPGTO(
         current.TOTAL,
         tabela,
+        somenteAvista,
       ).then((condicao) => {
         if (condicao.value === null) {
           toast('não há condições para o total do orçamento!', {
@@ -178,80 +187,168 @@ const FormEditPreSale = () => {
     setParcelasPgto((old) => (old = parcelas));
   }
 
-  function GerarPV() {
-    const ItensPV: iItemPreVenda[] = [];
+  function hasProdutoZerado(orc: iOrcamento): boolean {
+    return orc.ItensOrcamento.some((item) => {
+      const estoqueDisponivel =
+        item.PRODUTO.QTDATUAL - item.PRODUTO.QTD_GARANTIA;
+      return estoqueDisponivel <= 0;
+    });
+  }
 
-    for (const item in current.ItensOrcamento) {
-      ItensPV.push({
-        CodigoProduto: current.ItensOrcamento[item].PRODUTO.PRODUTO,
-        Qtd: current.ItensOrcamento[item].QTD,
-        Desconto: current.ItensOrcamento[item].DESCONTO
-          ? current.ItensOrcamento[item].DESCONTO
-          : 0,
-        SubTotal: current.ItensOrcamento[item].SUBTOTAL,
-        Tabela: current.ItensOrcamento[item].TABELA,
-        Valor: current.ItensOrcamento[item].VALOR,
-        Total: current.ItensOrcamento[item].TOTAL,
-        Frete: 0,
+  async function hasBloqueioCliente(orc: iOrcamento): Promise<boolean> {
+    try {
+      const resultFinanceiro = await GetFinanceiroCliente(
+        (orc.CLIENTE as iCliente).CLIENTE,
+      );
+      if (resultFinanceiro.error !== undefined) {
+        throw new Error(resultFinanceiro.error.message);
+      }
+
+      const financeiro: iFinanceiroCliente = resultFinanceiro.value!;
+      const nomeVendedor: string = (await getVendedorAction()).value!.NOME;
+
+      const bloqueios = getBloqueios({
+        contasAtrazadas: financeiro.ContasAtrazadas,
+        usaLimite: financeiro.UsaLimite,
+        saldoCompra: financeiro.SaldoCompra,
+        totalPedido: orc.TOTAL,
+        bloqueado: (orc.CLIENTE as iCliente).BLOQUEADO,
       });
-    }
 
-    const PV: iPreVenda = {
-      ...preSale,
-      Itens: ItensPV,
-      CodigoCondicaoPagamento: CondicaoPgtoSelected.ID,
-      Entrega: IsDelivery ? 'S' : 'N',
-    };
+      for (const codigo of bloqueios) {
+        let message = '';
 
-    SavePreVenda(PV)
-      .then((res) => {
-        if (res.value) {
-          toast('Pré-venda gerada com sucesso', {
-            position: 'bottom-right',
-            autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
-            theme: 'colored',
-            type: 'success',
-            transition: Flip,
-          });
+        if (codigo === 'LIMITE') {
+          message = `Cliente ${(orc.CLIENTE as iCliente).NOME} possui saldo disponível de ${FormatToCurrency(financeiro.SaldoCompra.toString())} para um pedido de ${FormatToCurrency(orc.TOTAL.toString())}.`;
         }
-        if (res.error) {
-          toast(res.error.message, {
+        if (codigo === 'INADIMPLENCIA') {
+          message = `Cliente ${(orc.CLIENTE as iCliente).NOME} possui inadimplência de ${FormatToCurrency(financeiro.ContasAtrazadas.toString())} não liberada.`;
+        }
+        if (codigo === 'BLOQUEADO') {
+          message = `Cliente ${(orc.CLIENTE as iCliente).NOME} está bloqueado.`;
+        }
+
+        const liberacao = await Liberacoes({
+          ID: 0,
+          NOME: 'CLIENTE',
+          CODIGO: codigo,
+          CHAVE: (orc.CLIENTE as iCliente).CLIENTE,
+          DATA_HORA: '',
+          QUEM: `Ven:${nomeVendedor}`,
+          USADO: 'N',
+          ONDE: 'PRÉ-VENDA',
+          ID_ONDE: 9999,
+          OBS: message,
+          MOVIMENTO: 0,
+        });
+
+        if (
+          !liberacao.value ||
+          liberacao.value.USADO !== 'S' ||
+          liberacao.value.ID_ONDE === 9999
+        ) {
+          toast(`Cliente ${(orc.CLIENTE as iCliente).NOME} possui bloqueio de ${codigo} não liberado.`, {
             position: 'bottom-right',
             autoClose: 5000,
-            hideProgressBar: false,
-            closeOnClick: false,
-            pauseOnHover: true,
-            draggable: true,
-            progress: undefined,
             theme: 'colored',
             type: 'error',
             transition: Flip,
           });
+          return true;
         }
-      })
-      .catch((e) => {
-        toast(e.message, {
+      }
+
+      return false;
+    } catch (e) {
+      toast(`Erro ao verificar bloqueios do cliente: ${getErrorMessage(e)}`, {
+        position: 'bottom-right',
+        autoClose: 5000,
+        theme: 'colored',
+        type: 'error',
+        transition: Flip,
+      });
+      return true;
+    }
+  }
+
+  const GerarPV = async () => {
+    try {
+      if (hasProdutoZerado(current)) {
+        toast('Existe produto com estoque zerado na lista!', {
           position: 'bottom-right',
           autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: false,
-          pauseOnHover: true,
-          draggable: true,
-          progress: undefined,
           theme: 'colored',
           type: 'error',
           transition: Flip,
         });
-      })
-      .finally(() => {
-        router.push('/app/pre-sales');
+        return;
+      }
+
+      const bloqueio = await hasBloqueioCliente(current);
+      if (bloqueio) {
+        toast(`Cliente ${(current.CLIENTE as iCliente).NOME} possui bloqueio não liberado.`, {
+          position: 'bottom-right',
+          autoClose: 5000,
+          theme: 'colored',
+          type: 'error',
+          transition: Flip,
+        });
+        return;
+      }
+
+      const ItensPV: iItemPreVenda[] = [];
+      for (const item of current.ItensOrcamento) {
+        if (item.QTD <= 0)
+          throw new Error(`O Item ${item.PRODUTO.PRODUTO} está zerado!`);
+        ItensPV.push({
+          CodigoProduto: item.PRODUTO.PRODUTO,
+          Qtd: item.QTD,
+          Desconto: item.DESCONTO || 0,
+          SubTotal: item.SUBTOTAL,
+          Tabela: item.TABELA,
+          Valor: item.VALOR,
+          Total: item.TOTAL,
+          Frete: 0,
+        });
+      }
+
+      const PV: iPreVenda = {
+        ...preSale,
+        Itens: ItensPV,
+        CodigoCondicaoPagamento: CondicaoPgtoSelected.ID,
+        Entrega: IsDelivery ? 'S' : 'N',
+        TipoEntrega: IsDelivery ? 'CARRO' : 'VEM BUSCAR',
+      };
+
+      const res = await SavePreVenda(PV);
+      if (res.error) throw res.error;
+
+      const resOrc = await UpdateOrcamento({
+        ...current,
+        PV: 'S',
       });
-  }
+      if (resOrc.error) throw resOrc.error;
+
+      if (res.value) {
+        toast('Pré-venda gerada com sucesso', {
+          position: 'bottom-right',
+          autoClose: 5000,
+          theme: 'colored',
+          type: 'success',
+          transition: Flip,
+        });
+        router.push('/app/pre-sales');
+      }
+    } catch (e) {
+      toast(`Erro ao gerar pré-venda: ${getErrorMessage(e)}`, {
+        position: 'bottom-right',
+        autoClose: 5000,
+        theme: 'colored',
+        type: 'error',
+        transition: Flip,
+      });
+    }
+  };
 
   useEffect(() => {
     getCondicao();

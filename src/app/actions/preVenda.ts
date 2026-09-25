@@ -11,6 +11,7 @@ import {
   iTransportadora,
 } from '@/@types/PreVenda';
 import { iDataResultTable } from '@/@types/Table';
+import { assertSafeSQLValue } from '@/lib/utils';
 import { CustomFetch } from '@/services/api';
 import dayjs from 'dayjs';
 import { getCookie } from '.';
@@ -212,10 +213,14 @@ export async function GetFormasPGTO() {
   };
 }
 
-export async function GetCondicaoPGTO(valor: number, tabela: string) {
+export async function GetCondicaoPGTO(valor: number, tabela: string, somenteAvista: boolean = false) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const sql = SQL_CONDICAO_PGTO.replace(':VALOR', String(valor)).replace(':TABELA', `'${tabela}'`);
+  const safeTabela = assertSafeSQLValue(tabela, 'tabela');
+  let sql = SQL_CONDICAO_PGTO.replace(':VALOR', String(valor)).replace(':TABELA', `'${safeTabela}'`);
+  if (somenteAvista) {
+    sql = sql.replace('ORDER BY 6', 'AND O.parcelas = 1 ORDER BY 6');
+  }
   const encodedSQL = encodeURIComponent(sql);
 
   const response = await CustomFetch<iApiResult<iCondicaoPgto[]>>(

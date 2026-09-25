@@ -174,6 +174,7 @@ export interface iFinanceiroCliente {
   TotalCreditos: number;
   LimiteCredito: number;
   SaldoCompra: number;
+  UsaLimite: boolean;
   ListaDebitos: iCredito[];
   ListaDebitosNaoVencidos: iCredito[];
   ListaCreditos: iCredito[];

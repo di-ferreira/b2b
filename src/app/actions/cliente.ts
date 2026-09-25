@@ -450,6 +450,7 @@ export async function GetFinanceiroCliente(
         TotalCreditos: creditosTotal,
         LimiteCredito: LimiteCredito,
         SaldoCompra: SaldoCompraTotal,
+        UsaLimite: customer.value!.CARTEIRA === 'S',
         ListaDebitos: debitosVencidos,
         ListaDebitosNaoVencidos: debitosNaoVencidos,
         ListaCreditos: creditos,

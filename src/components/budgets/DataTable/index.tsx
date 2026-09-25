@@ -188,7 +188,7 @@ function DataTableBudget() {
               buttonStyle='bg-transparent hover:bg-transparent m-0 p-0'
               iconStyle='text-emsoft_blue-light hover:text-emsoft_blue-main'
               titleButton='Gerar PDF'
-              containerStyle='laptop:w-[85vw] laptop:h-[85vh] tablet-a8-portrait:w-[85vw] tablet-a8-portrait:h-[85vh] w-[85vw] h-[85vh]'
+              fullScreen
             >
               <div className='w-full h-full'>
                 <GeneratePDF orc={item} />

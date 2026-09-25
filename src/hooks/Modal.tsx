@@ -15,6 +15,7 @@ interface ModalProps {
   bodyWidth?: string;
   containerStyle?: string;
   titleStyle?: string;
+  fullScreen?: boolean;
 }
 
 export default function Modal({
@@ -26,6 +27,7 @@ export default function Modal({
   bodyWidth,
   containerStyle,
   titleStyle,
+  fullScreen,
 }: ModalProps) {
   const OnEscKeyClose = (fn: () => void) => {
     const handleEscKey = useCallback(
@@ -51,15 +53,16 @@ export default function Modal({
   }, []);
 
   return ReactDOM.createPortal(
-    <section className='flex items-center justify-center fixed top-0 left-0 z-[500] w-screen h-screen bg-emsoft_dark-text bg-opacity-70'>
+    <section className='flex items-center justify-center fixed inset-0 z-[500] bg-emsoft_dark-text bg-opacity-70'>
       <div
         className={cn(
-          `relative overflow-hidden max-w-full max-h-full flex flex-col w-full items-center gap-1.5 my-2 bg-white rounded-md`,
+          `relative overflow-hidden max-w-full max-h-full flex flex-col w-full items-center gap-1.5 bg-white`,
+          fullScreen ? 'h-full rounded-none' : 'my-2 rounded-md',
           containerStyle
         )}
       >
         <span
-          className='absolute right-0 top-0 flex items-center justify-center cursor-pointer border-none min-w-7 min-h-7 max-w-10 max-h-10 bg-red-700'
+          className='absolute right-0 top-0 z-10 flex items-center justify-center cursor-pointer border-none min-w-7 min-h-7 max-w-10 max-h-10 bg-red-700'
           onClick={BtnClose}
         >
           <FontAwesomeIcon
@@ -79,7 +82,7 @@ export default function Modal({
         </header>
         <main
           className={cn(
-            `relative p-3 overflow-hidden`,
+            `relative p-3 overflow-y-auto`,
             bodyHeight ? `h-[${bodyHeight}]` : 'h-full',
             bodyWidth ? `w-[${bodyWidth}]` : 'w-full'
           )}

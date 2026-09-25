@@ -214,6 +214,7 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
           modalTitle={`Orçamento ${data.ORCAMENTO}`}
           buttonText={'Gerar PDF'}
           buttonIcon={faFilePdf}
+          fullScreen
         >
           <div className='w-full h-full'>
             <GeneratePDF orc={data} />

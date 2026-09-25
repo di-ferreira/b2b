@@ -76,6 +76,7 @@ export const headers: iColumnType<iOrcamento>[] = [
           buttonStyle='bg-transparent hover:bg-transparent m-0 p-0'
           iconStyle='text-emsoft_danger-dark hover:text-emsoft_danger-main'
           titleButton='Gerar PDF'
+          fullScreen
         >
           <div className='w-full h-full'>
             <GeneratePDF orc={item} />

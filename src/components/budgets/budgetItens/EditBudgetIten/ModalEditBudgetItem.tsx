@@ -18,6 +18,7 @@ interface iModalEditBudgetItem {
   titleStyle?: string;
   iconStyle?: string;
   titleButton?: string;
+  fullScreen?: boolean;
 }
 
 export const ModalEditBudgetItem = ({
@@ -30,6 +31,7 @@ export const ModalEditBudgetItem = ({
   titleStyle,
   iconStyle,
   titleButton = '',
+  fullScreen,
 }: iModalEditBudgetItem) => {
   const [isVisible, setIsVisible] = useState(false);
 
@@ -60,6 +62,7 @@ export const ModalEditBudgetItem = ({
           OnClose={handleClose}
           containerStyle={containerStyle}
           titleStyle={titleStyle}
+          fullScreen={fullScreen}
         >
           {React.cloneElement(children, { onCloseModal: handleClose })}
         </Modal>

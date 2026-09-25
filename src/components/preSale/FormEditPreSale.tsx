@@ -285,16 +285,7 @@ const FormEditPreSale = () => {
       }
 
       const bloqueio = await hasBloqueioCliente(current);
-      if (bloqueio) {
-        toast(`Cliente ${(current.CLIENTE as iCliente).NOME} possui bloqueio não liberado.`, {
-          position: 'bottom-right',
-          autoClose: 5000,
-          theme: 'colored',
-          type: 'error',
-          transition: Flip,
-        });
-        return;
-      }
+      if (bloqueio) return;
 
       const ItensPV: iItemPreVenda[] = [];
       for (const item of current.ItensOrcamento) {

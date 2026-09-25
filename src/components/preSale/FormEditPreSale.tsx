@@ -113,9 +113,10 @@ const FormEditPreSale = () => {
 
   function getCondicao() {
     if (current.TOTAL > 0) {
+      const tabela = (current.CLIENTE as iCliente)?.Tabela || 'SISTEMA';
       GetCondicaoPGTO(
-        current ? current.TOTAL : 0,
-        (current.CLIENTE as iCliente).Tabela,
+        current.TOTAL,
+        tabela,
       ).then((condicao) => {
         if (condicao.value === null) {
           toast('não há condições para o total do orçamento!', {
@@ -131,10 +132,18 @@ const FormEditPreSale = () => {
             transition: Flip,
           });
         }
-        if (condicao.value) {
+        if (condicao.value && condicao.value.length > 0) {
           setCondicaoPgto(condicao.value);
           setCondicaoPgtoSelected(condicao.value[0]);
           parcelasList(condicao.value[0]);
+        } else if (!condicao.error) {
+          toast('Nenhuma condição de pagamento disponível para este total.', {
+            position: 'bottom-right',
+            autoClose: 5000,
+            theme: 'colored',
+            type: 'warning',
+            transition: Flip,
+          });
         }
       });
     }

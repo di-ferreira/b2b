@@ -36,7 +36,7 @@ function PdfDocument({ orc }: PdfViewerProps) {
         <View style={[styles.header, styles.default]}>
           <View style={styles.logo}>
             <Image
-              src={`${window.location.protocol}//${window.location.host}/logo_15_novembro.jpeg`}
+              src={`${window.location.protocol}//${window.location.host}/LogoAutosul.png`}
             />
           </View>
 

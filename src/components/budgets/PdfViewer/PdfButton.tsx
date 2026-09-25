@@ -38,12 +38,12 @@ const GeneratePDF: React.FC<iGeneratePDF> = ({ orc }) => {
       >
         {/* header  */}
         <header className='w-full'>
-          <div className='gap-x-4 text-xs flex mb-5'>
-            <div className='w-[25%] tablet-portrait:w-[35%]  h-auto min-h-[65px] mt-1 ml-1'>
+          <div className='gap-x-4 text-xs flex tablet-portrait:flex-col mb-5'>
+            <div className='w-[25%] tablet-portrait:w-full h-auto min-h-[65px] mt-1 ml-1'>
               <Image src={LogoAutoSul} alt={'Logo'} className='w-full h-full' />
             </div>
 
-            <div className='w-[75%] flex flex-col gap-y-3 mx-1'>
+            <div className='w-[75%] tablet-portrait:w-full flex flex-col gap-y-3 mx-1'>
               <div className='flex gap-x-1'>
                 <p className='capitalize'>data:</p>
                 <p className='w-[85%] text-gray-900 border-b-[1px] border-solid border-black pl-1 pr-4 text-ellipsis font-bold pb-1'>
@@ -89,20 +89,20 @@ const GeneratePDF: React.FC<iGeneratePDF> = ({ orc }) => {
           <div className='flex flex-grow flex-col w-auto'>
             {/* Cabeçalho da Tabela */}
             <header className='flex text-gray-900 border-solid border-black border-b max-h-[35px] overflow-hidden bg-white font-bold'>
-              <div className='w-[25%] p-1 text-center'>
+              <div className='w-[25%] tablet-portrait:w-[30%] p-1 text-center'>
                 <p className='text-xs'>Produto</p>
               </div>
               <div className='w-[10%] p-1 text-center'>
                 <p className='text-xs'>Qtd</p>
               </div>
 
-              <div className='w-[30%] p-1 text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
+              <div className='w-[30%] tablet-portrait:w-[40%] p-1 text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
                 <p className='text-xs text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
                   Descrição
                 </p>
               </div>
 
-              <div className='w-[15%] p-1 text-right'>
+              <div className='w-[15%] tablet-portrait:hidden p-1 text-right'>
                 <p className='text-xs'>Valor</p>
               </div>
 
@@ -117,18 +117,18 @@ const GeneratePDF: React.FC<iGeneratePDF> = ({ orc }) => {
                 key={idx}
                 className='flex text-gray-900 border-solid border-black border-b max-h-[35px] overflow-hidden bg-white font-bold'
               >
-                <div className='w-[25%] p-1 text-center'>
+                <div className='w-[25%] tablet-portrait:w-[30%] p-1 text-center'>
                   <p className='text-xs'>{item.PRODUTO.PRODUTO}</p>
                 </div>
                 <div className='w-[10%] p-1 text-center'>
                   <p className='text-xs'>{item.QTD}</p>
                 </div>
-                <div className='w-[30%] p-1 text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
+                <div className='w-[30%] tablet-portrait:w-[40%] p-1 text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
                   <p className='text-xs text-center text-ellipsis text-nowrap whitespace-nowrap overflow-hidden'>
                     {item.PRODUTO.APLICACOES}
                   </p>
                 </div>
-                <div className='w-[15%] p-1 text-right'>
+                <div className='w-[15%] tablet-portrait:hidden p-1 text-right'>
                   <p className='text-xs'>
                     {item.VALOR.toLocaleString('pt-br', {
                       style: 'currency',

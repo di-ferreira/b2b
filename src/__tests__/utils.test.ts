@@ -3,6 +3,7 @@ import {
   FormatToCurrency,
   MaskCnpjCpf,
   RemoveSpecialCharacter,
+  assertSafeSQLValue,
   toIntSafe,
 } from '@/lib/utils';
 
@@ -95,5 +96,34 @@ describe('toIntSafe', () => {
 
   it('treats dot as thousands separator (pt-BR)', () => {
     expect(toIntSafe('42.99')).toBe(4299);
+  });
+});
+
+describe('assertSafeSQLValue', () => {
+  it('accepts a simple identifier', () => {
+    expect(assertSafeSQLValue('TAB01', 'tabela')).toBe('TAB01');
+  });
+
+  it('accepts a price table with plus sign', () => {
+    expect(assertSafeSQLValue('50+10', 'tabela')).toBe('50+10');
+  });
+
+  it('accepts numeric codes with dots and slashes', () => {
+    expect(assertSafeSQLValue('123.456/7-8', 'produto')).toBe('123.456/7-8');
+  });
+
+  it('rejects a single quote', () => {
+    expect(() => assertSafeSQLValue("1'; DROP TABLE", 'produto')).toThrow(
+      'Valor inválido para produto',
+    );
+  });
+
+  it('rejects a semicolon', () => {
+    expect(() => assertSafeSQLValue('a;b', 'produto')).toThrow();
+  });
+
+  it('rejects SQL comments', () => {
+    expect(() => assertSafeSQLValue('a--b', 'produto')).toThrow();
+    expect(() => assertSafeSQLValue('a/*b', 'produto')).toThrow();
   });
 });

@@ -113,9 +113,19 @@ export function toIntSafe(value: unknown): number {
 
 export function assertSafeSQLValue(value: unknown, field: string): string {
   const str = String(value);
-  if (!/^[\w./-]+$/.test(str)) {
+
+  // Bloqueia apenas o que permitiria sair do literal SQL ('...') ou emendar
+  // comandos. Valores legítimos como a tabela de preço '50+10' são aceitos.
+  const hasForbidden =
+    /[';\u0000-\u001f]/.test(str) ||
+    str.includes('--') ||
+    str.includes('/*') ||
+    str.includes('*/');
+
+  if (hasForbidden) {
     throw new Error(`Valor inválido para ${field}: ${str}`);
   }
+
   return str;
 }
 

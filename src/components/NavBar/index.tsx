@@ -1,5 +1,5 @@
 'use client';
-import { getCookie } from '@/app/actions';
+import { removeCookie } from '@/app/actions';
 import {
   faCartShopping,
   faClipboardList,
@@ -8,28 +8,38 @@ import {
   faShoppingBag,
   faUser,
 } from '@fortawesome/free-solid-svg-icons';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import NavBarItem, { iNavItem } from './NavBarItem';
 
-const NavBar = () => {
-  const [CodeUser, setCodeUser] = useState<string>('');
+interface Props {
+  codeUser: string;
+}
+
+const NavBar = ({ codeUser }: Props) => {
+  const router = useRouter();
   const [open, setOpen] = useState<boolean>(true);
+
+  async function logOut() {
+    await removeCookie('token_b2b');
+    await removeCookie('user_b2b');
+    await removeCookie('CIC');
+    router.replace('/auth');
+  }
+
+  const customerLink = codeUser
+    ? `/app/customer/${codeUser}`
+    : '/app/dashboard';
 
   const linkList: iNavItem[] = [
     { icon: faHomeAlt, link: '/app/dashboard', text: 'Dashboard' },
-    { icon: faUser, link: `/app/customer/${CodeUser}`, text: 'Dados Cliente' },
+    { icon: faUser, link: customerLink, text: 'Dados Cliente' },
     { icon: faShoppingBag, link: '/app/products', text: 'Produtos' },
     { icon: faClipboardList, link: '/app/pre-sales', text: 'Pré-Vendas' },
     { icon: faCartShopping, link: '/app/sales', text: 'Vendas' },
     { icon: faCartShopping, link: '/app/cart', text: 'Carrinho' },
-    { icon: faPowerOff, link: '/app/logout', text: 'LogOut' },
+    { icon: faPowerOff, onClick: logOut, text: 'LogOut' },
   ];
-  useEffect(() => {
-    getCookie('user_b2b').then((res) => {
-      setCodeUser((old) => res);
-    });
-    return () => {};
-  }, []);
 
   return (
     <aside
@@ -48,6 +58,7 @@ const NavBar = () => {
             key={idx}
             icon={link.icon}
             link={link.link}
+            onClick={link.onClick}
             text={link.text}
           />
         ))}
@@ -57,4 +68,3 @@ const NavBar = () => {
 };
 
 export default NavBar;
-

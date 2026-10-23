@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   const cookieStore = cookies();
   cookieStore.delete('token_b2b');
   cookieStore.delete('user_b2b');
   cookieStore.delete('CIC');
 
-  return NextResponse.redirect(new URL('/auth', 'http://localhost:3000'));
+  return NextResponse.redirect(new URL('/auth', request.url));
 }

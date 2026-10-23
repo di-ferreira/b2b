@@ -14,7 +14,7 @@ import { ModalEditBudgetItem } from '../EditBudgetIten/ModalEditBudgetItem';
 
 interface iNewBudgetItem {
   budget: iOrcamento;
-  CallBack: () => void;
+  CallBack: (budget?: iOrcamento) => void;
   onCloseModal?: () => void;
 }
 
@@ -90,7 +90,7 @@ const NewBudgetItemSearch = ({ budget, CallBack }: iNewBudgetItem) => {
         type: 'success',
       });
 
-      CallBack();
+      CallBack(response.value);
     } catch (error: any) {
       ToastNotify({
         message: `Erro ao adicionar item: ${error?.message ?? error}`,

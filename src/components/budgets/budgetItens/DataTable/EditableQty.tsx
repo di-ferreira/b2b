@@ -1,5 +1,5 @@
 'use client';
-import { iItensOrcamento } from '@/@types/Orcamento';
+import { iItensOrcamento, iOrcamento } from '@/@types/Orcamento';
 import { updateItem } from '@/app/actions/orcamento';
 import ToastNotify from '@/components/ToastNotify';
 import { calcQuantidade, estoqueDisponivel } from '@/lib/product';
@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 
 interface iEditableQty {
   item: iItensOrcamento;
-  onUpdated: () => void;
+  onUpdated: (budget?: iOrcamento) => void;
 }
 
 /**
@@ -90,7 +90,7 @@ const EditableQty = ({ item, onUpdated }: iEditableQty) => {
         type: 'success',
       });
 
-      onUpdated();
+      onUpdated(response.value);
     } catch (error: any) {
       ToastNotify({
         message: `Erro ao alterar quantidade: ${error?.message ?? error}`,

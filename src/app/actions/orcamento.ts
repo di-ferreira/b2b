@@ -95,6 +95,22 @@ export async function LoadOrcamento(): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token_b2b');
   const ClienteLocal: string = await getCookie('user_b2b');
 
+  // Sem cliente ou token a consulta OData fica malformada
+  // (CLIENTE eq &orderby=...) e a API responde QuerySyntaxError.
+  if (!ClienteLocal || !tokenCookie) {
+    console.error('[LoadOrcamento] Sessão incompleta:', {
+      temToken: Boolean(tokenCookie),
+      temCliente: Boolean(ClienteLocal),
+    });
+    return {
+      value: undefined,
+      error: {
+        code: '401',
+        message: 'Usuário não autenticado.',
+      },
+    };
+  }
+
   const response = await CustomFetch<iResultApi<iOrcamento>>(
     `${ROUTE_GET_ALL_ORCAMENTO}?$filter=(PV eq 'N' or PV eq null) and CLIENTE eq ${ClienteLocal}&orderby=ORCAMENTO desc&$top=1&$expand=VENDEDOR,CLIENTE`,
     {
@@ -268,6 +284,21 @@ export async function GetOrcamentosFromVendedor(
 export async function GetOrcamento(
   OrcamentoNumber: string | number,
 ): Promise<ResponseType<iOrcamento>> {
+  if (
+    OrcamentoNumber === undefined ||
+    OrcamentoNumber === null ||
+    String(OrcamentoNumber).trim() === ''
+  ) {
+    console.error('[GetOrcamento] ORCAMENTO inválido:', OrcamentoNumber);
+    return {
+      value: undefined,
+      error: {
+        code: '400',
+        message: 'Número do orçamento não informado.',
+      },
+    };
+  }
+
   const tokenCookie = await getCookie('token_b2b');
 
   const response = await CustomFetch<iOrcamento>(

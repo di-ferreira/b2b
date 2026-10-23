@@ -23,7 +23,7 @@ import { tableSalesHistoryHeaders } from './columns';
 interface iFormEditItem {
   item?: iItensOrcamento;
   budget: iOrcamento;
-  CallBack?: () => void;
+  CallBack?: (budget?: iOrcamento) => void;
   onCloseModal?: () => void;
 }
 
@@ -108,7 +108,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
       }
 
       if (CallBack) {
-        CallBack();
+        CallBack(response.value);
       }
 
       if (onCloseModal) onCloseModal();

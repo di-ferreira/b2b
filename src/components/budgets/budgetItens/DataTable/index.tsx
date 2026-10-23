@@ -4,6 +4,7 @@ import { iColumnType } from '@/@types/Table';
 import { GetOrcamento, removeItem } from '@/app/actions/orcamento';
 import { DataTable } from '@/components/CustomDataTable';
 import { Loading } from '@/components/Loading';
+import ToastNotify from '@/components/ToastNotify';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -13,6 +14,8 @@ import {
   faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { getErrorMessage } from '@/lib/utils';
+import useBudget from '@/store/BudgetStore';
 import Link from 'next/link';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import GeneratePDF from '../../PdfViewer/PdfButton';
@@ -29,23 +32,57 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
   const [data, setData] = useState<iOrcamento>(orc);
 
   const [loading, setLoading] = useState(false);
+  const { setCurrent } = useBudget();
 
-  const handleItensBudgets = useCallback(() => {
-    setLoading(true);
-    GetOrcamento(orc.ORCAMENTO)
-      .then((res) => {
-        if (res.value) {
-          setData(res.value);
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setLoading(false);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
-  }, []);
+  const orcamentoId = data.ORCAMENTO ?? orc.ORCAMENTO;
+
+  /**
+   * Atualiza a tabela e o orçamento no store (usado pela pré-venda).
+   * Quando a action já devolve o orçamento atualizado não há nova consulta.
+   */
+  const handleItensBudgets = useCallback(
+    (updated?: iOrcamento) => {
+      if (updated) {
+        setData(updated);
+        setCurrent(updated);
+        return;
+      }
+
+      if (!orcamentoId) {
+        console.error(
+          '[DataTableItensBudget] ORCAMENTO ausente: atualização ignorada',
+        );
+        return;
+      }
+
+      setLoading(true);
+      GetOrcamento(orcamentoId)
+        .then((res) => {
+          if (res.value) {
+            setData(res.value);
+            setCurrent(res.value);
+            return;
+          }
+
+          if (res.error) {
+            ToastNotify({
+              message: `Erro ao atualizar o orçamento: ${res.error.message}`,
+              type: 'error',
+            });
+          }
+        })
+        .catch((e) => {
+          ToastNotify({
+            message: `Erro ao atualizar o orçamento: ${getErrorMessage(e)}`,
+            type: 'error',
+          });
+        })
+        .finally(() => {
+          setLoading(false);
+        });
+    },
+    [orcamentoId, setCurrent],
+  );
 
   const tableHeaders: iColumnType<iItensOrcamento>[] = [
     {
@@ -59,12 +96,22 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
             className='cursor-pointer text-emsoft_blue-main hover:text-emsoft_blue-light'
             size='xl'
             title='Remover Item'
-            onClick={() => {
-              removeItem({
-                pIdOrcamento: item.ORCAMENTO,
+            onClick={async () => {
+              const res = await removeItem({
+                pIdOrcamento: item.ORCAMENTO ?? orcamentoId,
                 pProduto: item.PRODUTO.PRODUTO,
               });
-              handleItensBudgets();
+
+              if (res.error) {
+                ToastNotify({
+                  message: `Erro ao remover item: ${res.error.message}`,
+                  type: 'error',
+                });
+                return;
+              }
+
+              if (res.value) handleItensBudgets(res.value);
+              else handleItensBudgets();
             }}
           />
           <ModalEditBudgetItem

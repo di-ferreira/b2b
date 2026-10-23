@@ -25,7 +25,7 @@ interface iNewBudgetItem {
 const NewBudgetItemSearch = ({ budget, CallBack }: iNewBudgetItem) => {
   const [saving, setSaving] = useState(false);
 
-  const selectProduct = useProductStore((state) => state.selectProduct);
+  const getProductPrice = useProductStore((state) => state.getProductPrice);
   const searchResult = useProductStore((state) => state.searchResult);
 
   // Referência estável: o SuperSearchProducts reinicia a tabela quando `data` muda.
@@ -50,9 +50,16 @@ const NewBudgetItemSearch = ({ budget, CallBack }: iNewBudgetItem) => {
     try {
       const cliente = budget.CLIENTE as iCliente;
 
-      await selectProduct(prod, cliente);
+      const { price } = await getProductPrice(prod, cliente);
 
-      const price = useProductStore.getState().currentPrice;
+      if (!price || price <= 0) {
+        ToastNotify({
+          message: 'Não foi possível obter o preço do produto. Tente novamente.',
+          type: 'error',
+        });
+        return;
+      }
+
       const qtd = calcQuantidade(1, prod);
       const total = price * qtd;
 

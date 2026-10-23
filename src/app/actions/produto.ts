@@ -532,8 +532,10 @@ export async function GetSaleHistory(
     };
   }
 
+  const data = res.body?.Data;
+
   return {
-    value: res.body.Data,
+    value: Array.isArray(data) ? (data as iSaleHistory[]) : [],
     error: undefined,
   };
 }

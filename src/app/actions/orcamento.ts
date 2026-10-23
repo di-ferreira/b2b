@@ -566,7 +566,9 @@ export async function removeItem(
   };
 }
 
-export async function addItem(itemOrcamento: iItemInserir) {
+async function addItemInternal(
+  itemOrcamento: iItemInserir,
+): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token_b2b');
   const res = await CustomFetch<{ error?: { code: string; message: string } }>(
     ROUTE_SAVE_ITEM_ORCAMENTO,
@@ -620,7 +622,30 @@ export async function addItem(itemOrcamento: iItemInserir) {
   };
 }
 
-export async function updateItem(itemOrcamento: iItemInserir) {
+/**
+ * Nunca lança: erros inesperados são convertidos em resposta de erro para que
+ * a mensagem chegue ao cliente em vez do erro genérico do Next em produção.
+ */
+export async function addItem(
+  itemOrcamento: iItemInserir,
+): Promise<ResponseType<iOrcamento>> {
+  try {
+    return await addItemInternal(itemOrcamento);
+  } catch (err: any) {
+    console.error('[addItem] Unexpected error:', err);
+    return {
+      value: undefined,
+      error: {
+        code: '500',
+        message: `Falha ao adicionar item: ${err?.message ?? err}`,
+      },
+    };
+  }
+}
+
+async function updateItemInternal(
+  itemOrcamento: iItemInserir,
+): Promise<ResponseType<iOrcamento>> {
   const tokenCookie = await getCookie('token_b2b');
 
   const removeResult = await CustomFetch<{ error?: { code: string; message: string } }>(
@@ -710,5 +735,26 @@ export async function updateItem(itemOrcamento: iItemInserir) {
     value: response.value,
     error: undefined,
   };
+}
+
+/**
+ * Nunca lança: erros inesperados são convertidos em resposta de erro para que
+ * a mensagem chegue ao cliente em vez do erro genérico do Next em produção.
+ */
+export async function updateItem(
+  itemOrcamento: iItemInserir,
+): Promise<ResponseType<iOrcamento>> {
+  try {
+    return await updateItemInternal(itemOrcamento);
+  } catch (err: any) {
+    console.error('[updateItem] Unexpected error:', err);
+    return {
+      value: undefined,
+      error: {
+        code: '500',
+        message: `Falha ao alterar item: ${err?.message ?? err}`,
+      },
+    };
+  }
 }
 

@@ -37,11 +37,48 @@ type ProductStore = {
 
   searchProducts: (word: string) => Promise<iProduto[]>;
 
+  // Preço de tabela/promoção sem carregar histórico, similares e estoque
+  getProductPrice: (
+    prod: iProduto,
+    cliente: iCliente,
+  ) => Promise<{ price: number; isOferta: boolean }>;
+
   // Agora recebe o cliente para já disparar os detalhes
   selectProduct: (prod: iProduto, cliente: iCliente) => Promise<void>;
 
   clearDetails: () => void;
 };
+
+/**
+ * Preço do produto na tabela do cliente, considerando promoção.
+ * Nunca lança: usa o preço cadastrado do produto como último recurso.
+ */
+async function resolvePrice(prod: iProduto, cliente?: iCliente) {
+  const [promo, tablePrice] = await Promise.allSettled([
+    GetProductPromotion(prod),
+    GetNewPriceFromTable(prod, cliente?.Tabela as string),
+  ]);
+
+  if (promo.status === 'rejected') {
+    console.error('[resolvePrice] GetProductPromotion failed:', promo.reason);
+  }
+
+  if (tablePrice.status === 'rejected') {
+    console.error('[resolvePrice] GetNewPriceFromTable failed:', tablePrice.reason);
+  }
+
+  const promotion = promo.status === 'fulfilled' ? promo.value.value : undefined;
+  const tableValue =
+    tablePrice.status === 'fulfilled' ? tablePrice.value.value : undefined;
+
+  const offer = promotion?.OFERTA;
+  const hasOffer = offer !== undefined && offer !== null;
+
+  return {
+    price: hasOffer ? Number(offer) : Number(tableValue || prod.PRECO || 0),
+    isOferta: hasOffer,
+  };
+}
 
 const useProductStore = create<ProductStore>((set, get) => ({
   productSelected: null,
@@ -78,21 +115,19 @@ const useProductStore = create<ProductStore>((set, get) => ({
     }
   },
 
+  getProductPrice: async (prod, cliente) => {
+    const { price, isOferta } = await resolvePrice(prod, cliente);
+    set({ currentPrice: price, isOferta });
+    return { price, isOferta };
+  },
+
   selectProduct: async (prod, cliente) => {
     set({ isLoading: true, productSelected: prod });
     try {
-      const cacheKey = `${cliente.CLIENTE}-${prod.PRODUTO}`;
+      const cacheKey = `${cliente?.CLIENTE}-${prod.PRODUTO}`;
       const cache = get().cacheDetails[cacheKey];
 
-      const [promo, tablePriceResult] = await Promise.all([
-        GetProductPromotion(prod),
-        GetNewPriceFromTable(prod, cliente.Tabela),
-      ]);
-
-      let price = promo.value
-        ? promo.value.OFERTA
-        : tablePriceResult.value || prod.PRECO;
-      let isOferta = !!promo.value;
+      const { price, isOferta } = await resolvePrice(prod, cliente);
 
       if (cache) {
         set({
@@ -106,26 +141,35 @@ const useProductStore = create<ProductStore>((set, get) => ({
         return;
       }
 
-      const [historyRes, simsRes, estoqueRes] = await Promise.all([
+      const [historyRes, simsRes, estoqueRes] = await Promise.allSettled([
         GetSaleHistory(cliente, prod),
         GetSimilares(prod.PRODUTO),
         GetEstoqueFiliais(prod.PRODUTO),
       ]);
 
       let similaresFiltrados: iListaSimilare[] = [];
-      if (simsRes.value !== undefined && simsRes.value !== null) {
-        similaresFiltrados = simsRes.value.filter((similar) => {
-          return (
-            similar.EXTERNO.ATIVO !== 'N' &&
-            similar.EXTERNO.VENDA !== 'N' &&
-            similar.EXTERNO.TRANCAR !== 'S'
-          );
-        });
+
+      if (simsRes.status === 'fulfilled') {
+        const similaresValue = simsRes.value.value;
+
+        if (similaresValue !== undefined && similaresValue !== null) {
+          similaresFiltrados = similaresValue.filter((similar) => {
+            return (
+              similar.EXTERNO.ATIVO !== 'N' &&
+              similar.EXTERNO.VENDA !== 'N' &&
+              similar.EXTERNO.TRANCAR !== 'S'
+            );
+          });
+        }
+      } else {
+        console.error('[selectProduct] GetSimilares failed:', simsRes.reason);
       }
 
-      const history = historyRes.value || [];
+      const history =
+        historyRes.status === 'fulfilled' ? historyRes.value.value || [] : [];
       const similares = similaresFiltrados;
-      const estoqueFiliais = estoqueRes.value || [];
+      const estoqueFiliais =
+        estoqueRes.status === 'fulfilled' ? estoqueRes.value.value || [] : [];
 
       set((state) => ({
         history,

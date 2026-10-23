@@ -118,17 +118,16 @@ const FormEditPreSale = () => {
   });
 
   function getCondicao() {
-    if (current.TOTAL > 0) {
-      const cliente = current.CLIENTE as iCliente;
-      const tabela = cliente?.Tabela || 'SISTEMA';
-      const somenteAvista = cliente?.CARTEIRA === 'N';
-      GetCondicaoPGTO(
-        current.TOTAL,
-        tabela,
-        somenteAvista,
-      ).then((condicao) => {
-        if (condicao.value === null) {
-          toast('não há condições para o total do orçamento!', {
+    if (!(current.TOTAL > 0)) return;
+
+    const cliente = current.CLIENTE as iCliente;
+    const tabela = cliente?.Tabela || 'SISTEMA';
+    const somenteAvista = cliente?.CARTEIRA === 'N';
+
+    GetCondicaoPGTO(current.TOTAL, tabela, somenteAvista)
+      .then((condicao) => {
+        if (condicao.error !== undefined) {
+          toast(`Erro ao buscar condições de pagamento: ${condicao.error.message}`, {
             position: 'bottom-right',
             autoClose: 5000,
             hideProgressBar: false,
@@ -140,22 +139,42 @@ const FormEditPreSale = () => {
             type: 'error',
             transition: Flip,
           });
+          return;
         }
-        if (condicao.value && condicao.value.length > 0) {
-          setCondicaoPgto(condicao.value);
-          setCondicaoPgtoSelected(condicao.value[0]);
-          parcelasList(condicao.value[0]);
-        } else if (!condicao.error) {
-          toast('Nenhuma condição de pagamento disponível para este total.', {
-            position: 'bottom-right',
-            autoClose: 5000,
-            theme: 'colored',
-            type: 'warning',
-            transition: Flip,
-          });
+
+        const condicoes = condicao.value ?? [];
+
+        if (condicoes.length === 0) {
+          setCondicaoPgto([]);
+          setParcelasPgto([]);
+          toast(
+            `Nenhuma condição de pagamento para a tabela ${tabela} com total ${FormatToCurrency(
+              current.TOTAL.toString(),
+            )}.`,
+            {
+              position: 'bottom-right',
+              autoClose: 5000,
+              theme: 'colored',
+              type: 'warning',
+              transition: Flip,
+            },
+          );
+          return;
         }
+
+        setCondicaoPgto(condicoes);
+        setCondicaoPgtoSelected(condicoes[0]);
+        parcelasList(condicoes[0]);
+      })
+      .catch((e) => {
+        toast(`Erro ao buscar condições de pagamento: ${getErrorMessage(e)}`, {
+          position: 'bottom-right',
+          autoClose: 5000,
+          theme: 'colored',
+          type: 'error',
+          transition: Flip,
+        });
       });
-    }
   }
 
   function getFormasPgto() {
@@ -273,6 +292,17 @@ const FormEditPreSale = () => {
 
   const GerarPV = async () => {
     try {
+      if (CondicaoPgto.length === 0 || CondicaoPgtoSelected.ID <= 0) {
+        toast('Selecione uma condição de pagamento para gerar a pré-venda.', {
+          position: 'bottom-right',
+          autoClose: 5000,
+          theme: 'colored',
+          type: 'error',
+          transition: Flip,
+        });
+        return;
+      }
+
       if (hasProdutoZerado(current)) {
         toast('Existe produto com estoque zerado na lista!', {
           position: 'bottom-right',

@@ -256,8 +256,20 @@ export async function GetCondicaoPGTO(valor: number, tabela: string, somenteAvis
     };
   }
 
+  const condicoes: iCondicaoPgto[] = response.body.Data ?? [];
+
+  if (condicoes.length === 0) {
+    console.warn('[GetCondicaoPGTO] Nenhuma condição encontrada:', {
+      valor,
+      tabela,
+      somenteAvista,
+      recordCount: response.body.RecordCount,
+      sql,
+    });
+  }
+
   return {
-    value: response.body.Data,
+    value: condicoes,
     error: undefined,
   };
 }

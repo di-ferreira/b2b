@@ -23,7 +23,8 @@ interface iReqSuperBusca {
   QuantidadeRegistros?: number;
 }
 const SQL_NEW_PRICE_FROM_TABLE = (produto: string, tabela: string) =>
-  `select E.PRODUTO, E.PRECO, cast(E.PRECO * ((T.PERCENTUAL / 100) + 1) as numeric(10,2)) as NOVO_PRECO from EST E join TAB T on (T.TABELA = '${assertSafeSQLValue(tabela, 'tabela')}') where E.PRODUTO = '${assertSafeSQLValue(produto, 'produto')}' `;
+  // Multiplica antes de dividir: no Firebird, PERCENTUAL inteiro / 100 daria 0.
+  `select E.PRODUTO, E.PRECO, cast(E.PRECO + ((E.PRECO * T.PERCENTUAL) / 100) as numeric(10,2)) as NOVO_PRECO from EST E join TAB T on (T.TABELA = '${assertSafeSQLValue(tabela, 'tabela')}') where E.PRODUTO = '${assertSafeSQLValue(produto, 'produto')}' `;
 
 const SQL_PRODUCTS_PROMOTION = (produto: string) =>
   `select  E.PRODUTO, E.REFERENCIA, e.nome, e.preco, e.qtdatual, P.valor as OFERTA, p.validade from EST E join promocao p on (p.produto = e.produto) where p.validade >= 'TODAY' and e.produto = '${assertSafeSQLValue(produto, 'produto')}' order by 6`;

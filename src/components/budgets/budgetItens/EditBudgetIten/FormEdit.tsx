@@ -3,19 +3,18 @@ import { iCliente } from '@/@types/Cliente';
 import { iItemInserir, iItensOrcamento, iOrcamento } from '@/@types/Orcamento';
 import { iListaSimilare, iProduto } from '@/@types/Produto';
 import { iColumnType } from '@/@types/Table';
-import { addItem, updateItem } from '@/app/actions/orcamento';
+import { updateItem } from '@/app/actions/orcamento';
 import { DataTable } from '@/components/CustomDataTable';
 import { Loading } from '@/components/Loading';
 import ToastNotify from '@/components/ToastNotify';
-import { SearchProductsModal } from '@/components/products/SearchProductsModal';
-import SuperSearchProducts from '@/components/products/SuperSearchProduct';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { calcQuantidade, estoqueDisponivel } from '@/lib/product';
 import { FormatToCurrency } from '@/lib/utils';
 import useBudget from '@/store/BudgetStore';
 import useProductStore from '@/store/useProductStore';
-import { faPlus, faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faTimes } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import dayjs from 'dayjs';
 import React, { useEffect, useRef, useState } from 'react';
@@ -31,8 +30,6 @@ interface iFormEditItem {
 const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   const { current, setCurrent } = useBudget();
   const {
-    searchProducts,
-    searchResult,
     selectProduct,
     isLoading,
     isOferta,
@@ -43,19 +40,13 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     estoqueFiliais,
     clearDetails,
   } = useProductStore();
-  const [IsVisibleModalProducts, setIsVisibleModalProducts] =
-    useState<boolean>(false);
   const [budgetItem, setBudgetItem] = useState<iItensOrcamento>({
     QTD: 1,
     VALOR: 0,
     TOTAL: 0,
     SUBTOTAL: 0,
     DESCONTO: 0,
-    TABELA:
-      (budget.CLIENTE as iCliente).Tabela !== undefined ||
-      (budget.CLIENTE as iCliente).Tabela !== ''
-        ? (budget.CLIENTE as iCliente).Tabela!
-        : 'SISTEMA',
+    TABELA: (budget.CLIENTE as iCliente).Tabela || 'SISTEMA',
     OBS: '',
     MD5: '',
     ITEM: 0,
@@ -71,48 +62,46 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   const [WordProducts, setWordProducts] = useState<string>('');
   const [QtdItem, setQtdItem] = useState<string>('1');
   const formRef = useRef<HTMLFormElement>(null);
-  const inputProductRef = useRef<HTMLInputElement>(null);
   const inputQTDRef = useRef<HTMLInputElement>(null);
   const inputBtnSalvarRef = useRef<HTMLButtonElement>(null);
 
   async function saveItem(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+
+    if (item === undefined) return;
+
     try {
-      let response;
-      let message = '';
+      const valor = currentPrice || budgetItem.VALOR || item.VALOR;
+      const qtd = calcQuantidade(budgetItem.QTD, item.PRODUTO);
+      const total = valor * qtd;
+
       const itemSave: iItemInserir = {
         pIdOrcamento: current.ORCAMENTO,
         pItemOrcamento: {
-          CodigoProduto: WordProducts,
+          CodigoProduto: item.PRODUTO.PRODUTO,
           Desconto: 0,
           Frete: 0,
-          Qtd: budgetItem.QTD,
+          Qtd: qtd,
           Tabela: budgetItem.TABELA,
-          Valor: currentPrice,
-          SubTotal: budgetItem.SUBTOTAL,
-          Total: budgetItem.TOTAL,
+          Valor: valor,
+          SubTotal: total,
+          Total: total,
         },
       };
 
-      if (item !== undefined) {
-        response = await updateItem(itemSave);
-        message = 'Item editado com sucesso';
-      } else {
-        response = await addItem(itemSave);
-        message = 'Item adicionado com sucesso';
-      }
+      const response = await updateItem(itemSave);
 
       if (response?.value !== undefined) {
         setCurrent(response.value as iOrcamento);
         ToastNotify({
-          message: message,
+          message: 'Item editado com sucesso',
           type: 'success',
         });
       }
 
       if (response?.error !== undefined) {
         ToastNotify({
-          message: `Erro ao adicionar/editar item: ${response.error.message}`,
+          message: `Erro ao editar item: ${response.error.message}`,
           type: 'error',
         });
         return;
@@ -122,33 +111,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
         CallBack();
       }
 
-      if (item !== undefined) {
-        if (onCloseModal) onCloseModal();
-      } else {
-        setWordProducts('');
-        clearDetails();
-        setBudgetItem({
-          QTD: 1,
-          VALOR: 0,
-          TOTAL: 0,
-          SUBTOTAL: 0,
-          DESCONTO: 0,
-          TABELA: (current.CLIENTE as iCliente).Tabela || 'SISTEMA',
-          OBS: '',
-          MD5: '',
-          ITEM: 0,
-          PRECO_LIQUIDO: '',
-          IMP_SEPARACAO: '',
-          GORDURA: 0,
-          P_DESC: 0,
-          ID_VALE_CASCO: 0,
-          ORCAMENTO: current.ORCAMENTO,
-          PRODUTO: {} as iProduto,
-        });
-
-        setQtdItem('1');
-        setTimeout(() => inputProductRef.current?.focus(), 100);
-      }
+      if (onCloseModal) onCloseModal();
     } catch (err: any) {
       console.error('[saveItem] Unexpected error:', err);
       ToastNotify({
@@ -158,118 +121,22 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
     }
   }
 
-  async function UpdateProduct(prod: iProduto) {
-    let newQtd = 1;
-
-    if (prod !== undefined) {
-      newQtd = handleCalcQTD(budgetItem.QTD, prod);
-
-      setBudgetItem(
-        (old) =>
-          (old = {
-            ...budgetItem,
-            PRODUTO: prod,
-            VALOR: currentPrice,
-            QTD: newQtd,
-            SUBTOTAL: currentPrice * budgetItem.QTD,
-            TOTAL: currentPrice * budgetItem.QTD,
-          }),
-      );
-
-      if (prod.QTDATUAL - prod.QTD_GARANTIA <= 0) {
-        ToastNotify({
-          message: 'Produto sem estoque disponível para venda',
-          type: 'error',
-        });
-      }
-
-      setQtdItem((old) => (old = newQtd.toString()));
-      setWordProducts(prod.PRODUTO);
-      inputQTDRef.current?.focus();
-    }
-  }
-
-  async function loadingProduct(product: iProduto) {
-    selectProduct(product, current.CLIENTE as iCliente);
-    setIsVisibleModalProducts(false);
-
-    try {
-      await UpdateProduct(product);
-    } catch (e: any) {
-      ToastNotify({
-        message: `Erro inesperado ao carregar produto: ${e.message}`,
-        type: 'error',
-      });
-    }
-  }
-
-  async function findProduct() {
-    try {
-      const products = await searchProducts(WordProducts);
-
-      if (products.length === 1) {
-        const product = await selectProduct(
-          products[0],
-          current.CLIENTE as iCliente,
-        );
-
-        setBudgetItem((prev) => ({
-          ...prev,
-          PRODUTO: products[0],
-          VALOR: productSelected?.PRECO || 0,
-        }));
-
-        setWordProducts(products[0].PRODUTO);
-        inputQTDRef.current?.focus();
-      } else if (products.length > 1) {
-        setIsVisibleModalProducts(true);
-      } else {
-        ToastNotify({ message: 'Não encontrado', type: 'error' });
-      }
-    } catch (error: any) {
-      ToastNotify({ message: `Erro: ${error.message}`, type: 'error' });
-    }
-  }
-
-  const OnSearchProduto = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      findProduct();
-    }
-  };
-
-  const handleCalcQTD = (qtd: number, product: iProduto): number => {
-    let newQtd = 1;
-
-    const multiploCompra = Number(product.MULTIPLO_COMPRA) || 1;
-    const qtdVenda = Number(product.QTD_VENDA) || 1;
-
-    const multiplo = qtdVenda > 1 ? qtdVenda : multiploCompra;
-
-    newQtd = Math.ceil(qtd / multiplo) * multiplo;
-
-    if (newQtd > product.QTDATUAL - product.QTD_GARANTIA) {
-      newQtd = product.QTDATUAL - product.QTD_GARANTIA;
-    }
-
-    return newQtd;
-  };
-
   async function onChangeQTD(e: React.ChangeEvent<HTMLInputElement>) {
     let newQtd = Number(e.target.value);
 
     if (Number.isNaN(newQtd) || newQtd < 1) {
       newQtd = 1;
     }
-    const finalQtd = handleCalcQTD(newQtd, productSelected!);
 
-    setQtdItem(finalQtd.toString());
+    const qtd = calcQuantidade(newQtd, budgetItem.PRODUTO);
 
-    let total: number = currentPrice * finalQtd;
+    setQtdItem(qtd.toString());
+
+    const total: number = currentPrice * qtd;
 
     setBudgetItem((prevBudgetItem) => ({
       ...prevBudgetItem,
-      QTD: finalQtd,
+      QTD: qtd,
       SUBTOTAL: total,
       TOTAL: total,
     }));
@@ -300,8 +167,8 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   }
 
   useEffect(() => {
-    // Foco no input ao abrir o modal
-    inputProductRef.current?.focus();
+    // Foco no input de quantidade ao abrir o modal
+    inputQTDRef.current?.focus();
 
     // Carrega o item quando o componente monta ou o 'item' prop muda
     const loadData = async () => {
@@ -316,24 +183,6 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
   }, [current.ORCAMENTO, item?.PRODUTO.PRODUTO]);
 
   const tableSimilaresHeaders: iColumnType<iListaSimilare>[] = [
-    {
-      key: 'acoes',
-      title: 'AÇÕES',
-      width: '10%',
-      render: (_, item) => (
-        <span className='flex w-full items-center justify-center gap-x-5'>
-          <FontAwesomeIcon
-            icon={faPlus}
-            className='cursor-pointer text-emsoft_orange-main hover:text-emsoft_orange-light'
-            size='xl'
-            title='Adicionar'
-            onClick={() => {
-              loadingProduct(item.EXTERNO);
-            }}
-          />
-        </span>
-      ),
-    },
     {
       key: 'EXTERNO.PRODUTO',
       title: 'PRODUTO',
@@ -388,17 +237,11 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
               >
                 <div className={`flex w-[100%]`}>
                   <Input
-                    onChange={(e) =>
-                      setWordProducts(e.target.value.toUpperCase())
-                    }
                     value={WordProducts}
-                    ref={inputProductRef}
                     name='ProdutoPalavras'
                     labelText='PRODUTO'
                     labelPosition='top'
-                    enterKeyHint='enter'
-                    onKeyDown={OnSearchProduto}
-                    disabled={item !== undefined}
+                    disabled
                   />
                 </div>
               </div>
@@ -604,11 +447,7 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
               className={`flex w-fit h-[35px] p-3 gap-3`}
               title='Salvar produto'
               ref={inputBtnSalvarRef}
-              disabled={
-                budgetItem.PRODUTO?.QTDATUAL! -
-                  budgetItem.PRODUTO?.QTD_GARANTIA! <=
-                0
-              }
+              disabled={estoqueDisponivel(budgetItem.PRODUTO) <= 0}
             >
               <FontAwesomeIcon
                 icon={faSave}
@@ -639,16 +478,6 @@ const FormEdit = ({ item, budget, CallBack, onCloseModal }: iFormEditItem) => {
             </Button>
           </div>
         </footer>
-        <SearchProductsModal
-          modalTitle={'Busca de Produtos'}
-          IsVisible={IsVisibleModalProducts}
-        >
-          <SuperSearchProducts
-            words={WordProducts}
-            data={{ value: searchResult, Qtd_Registros: searchResult.length }}
-            CallBack={loadingProduct}
-          />
-        </SearchProductsModal>
       </form>
       {isLoading && <Loading />}
     </div>

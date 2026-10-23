@@ -10,7 +10,6 @@ import {
   faEdit,
   faFileInvoiceDollar,
   faFilePdf,
-  faPlusCircle,
   faTrashAlt,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -19,6 +18,8 @@ import { Suspense, useCallback, useEffect, useState } from 'react';
 import GeneratePDF from '../../PdfViewer/PdfButton';
 import FormEdit from '../EditBudgetIten/FormEdit';
 import { ModalEditBudgetItem } from '../EditBudgetIten/ModalEditBudgetItem';
+import NewBudgetItem from '../NewBudgetItem';
+import EditableQty from './EditableQty';
 
 interface iItemBudgetTable {
   orc: iOrcamento;
@@ -168,7 +169,7 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
             ' bg-red-700 text-emsoft_light-surface font-bold'
           }`}
         >
-          {item.QTD}
+          <EditableQty item={item} onUpdated={handleItensBudgets} />
         </span>
       ),
     },
@@ -202,14 +203,7 @@ const DataTableItensBudget = ({ orc }: iItemBudgetTable) => {
   return (
     <section className='flex flex-col gap-x-5 w-full mt-7 tablet-portrait:gap-y-6'>
       <div className='flex w-full items-center px-5 mt-8 gap-x-4 tablet-portrait:h-auto tablet-portrait:gap-y-6'>
-        <ModalEditBudgetItem
-          modalTitle={'Novo Item'}
-          buttonText={'Novo Item'}
-          buttonIcon={faPlusCircle}
-          containerStyle='laptop:w-[85vw] laptop:h-[85vh] tablet-a8-portrait:w-[85vw] tablet-a8-portrait:h-[85vh] w-[85vw] h-[85vh]'
-        >
-          <FormEdit budget={data} CallBack={handleItensBudgets} />
-        </ModalEditBudgetItem>
+        <NewBudgetItem budget={data} CallBack={handleItensBudgets} />
         <ModalEditBudgetItem
           modalTitle={`Orçamento ${data.ORCAMENTO}`}
           buttonText={'Gerar PDF'}

@@ -17,6 +17,23 @@ import { Input } from '../ui/input';
 
 const REGISTROS_POR_PAGINA = ROWS_PER_PAGE_OPTIONS[0];
 
+const formatarPreco = (valor: number) =>
+  Number(valor ?? 0).toLocaleString('pt-br', {
+    style: 'currency',
+    currency: 'BRL',
+  });
+
+/**
+ * Estoque/preço por loja só existem quando o produto tem linha na filial
+ * (`ESTOQUE_LOJAS`). Sem linha — ou quando a consulta de estoque falha — a
+ * coluna mostra "-" em vez de um zero que pareceria estoque zerado.
+ */
+const formatarLoja = (valor: number | undefined) =>
+  valor === undefined || valor === null ? '-' : String(valor);
+
+const formatarPrecoLoja = (valor: number | undefined) =>
+  valor === undefined || valor === null ? '-' : formatarPreco(valor);
+
 /**
  * Mesmo tamanho de página que o TablePagination vai usar: ele guarda a
  * escolha do usuário no storage. Sem storage, a busca inicial traz 10.
@@ -49,7 +66,7 @@ const SuperSearchProducts = ({ data, words, CallBack }: iProps) => {
     {
       key: 'acoes',
       title: 'AÇÕES',
-      width: '10%',
+      width: '4%',
       render: (_, item) => (
         <span className='flex w-full items-center justify-center gap-x-5'>
           <FontAwesomeIcon
@@ -70,43 +87,45 @@ const SuperSearchProducts = ({ data, words, CallBack }: iProps) => {
     {
       key: 'PRODUTO',
       title: 'CÓDIGO',
-      width: '10%',
+      width: '8%',
     },
     {
       key: 'REFERENCIA',
       title: 'REFERÊNCIA',
-      width: '25%',
+      width: '10%',
     },
     {
       key: 'NOME',
       title: 'NOME',
-      width: '20%',
-    },
-    {
-      key: 'APLICACOES',
-      title: 'APLICAÇÕES',
-      width: '35%',
+      width: '29%',
     },
     {
       key: 'FABRICANTE.NOME',
       title: 'FABRICANTE',
-      width: '35%',
+      width: '19%',
     },
     {
       key: 'QTDATUAL',
-      title: 'QTD',
-      width: '10%',
+      title: 'QTD_RJ',
+      width: '6%',
     },
     {
       key: 'PRECO',
-      title: 'VALOR',
-      width: '10%',
-      render: (_, item) => {
-        return Number(item.PRECO ?? 0).toLocaleString('pt-br', {
-          style: 'currency',
-          currency: 'BRL',
-        });
-      },
+      title: 'PREÇO_RJ',
+      width: '9%',
+      render: (_, item) => formatarPreco(item.PRECO),
+    },
+    {
+      key: 'QTD_ES',
+      title: 'QTD_ES',
+      width: '6%',
+      render: (_, item) => formatarLoja(item.QTD_ES),
+    },
+    {
+      key: 'PRECO_ES',
+      title: 'PREÇO_ES',
+      width: '9%',
+      render: (_, item) => formatarPrecoLoja(item.PRECO_ES),
     },
   ];
 

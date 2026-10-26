@@ -358,6 +358,13 @@ export interface iProduto {
   iListaVendaCasada: iListaVendaCasada[];
   iListaOfertaProduto: iListaOfertaProduto[];
   ListaChaves: iListaChave[];
+  /**
+   * Estoque e preço da filial (`ESTOQUE_LOJAS`, loja padronizada em `LOJA_FILIAL`).
+   * Não vêm do SuperBusca: são preenchidos no front por `SuperFindProducts`.
+   * Ficam indefinidos quando o produto não tem linha na loja.
+   */
+  QTD_ES?: number;
+  PRECO_ES?: number;
 }
 
 export interface iProdutoWithTables {

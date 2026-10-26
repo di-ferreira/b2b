@@ -45,6 +45,12 @@ const ROUTE_SUPER_BUSCA = '/ServiceProdutos/SuperBusca';
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const ROUTE_ESTOQUE_LOJAS = '/EstoqueFiliais';
 
+/**
+ * Loja de ESTOQUE_LOJAS que representa a filial (em FILIAIS: "Filial ES").
+ * O filtro usa lower(LOJA), então mudança de caixa no cadastro não quebra.
+ */
+const LOJA_FILIAL = 'Filial';
+
 const ROUTE_GET_ALL_PRODUTO = '/Produto';
 const ROUTE_GET_ALL_SIMILARES = '/Similares';
 const ROUTE_GET_SALE_HISTORY = '/ServiceClientes/ListaHistoricoVendas';
@@ -180,6 +186,89 @@ async function CreateQueryParams(filter: iFilter<iProduto>): Promise<string> {
   return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}${expand}&$inlinecount=allpages`;
 }
 
+export type tpEstoqueLoja = {
+  ESTOQUE: number;
+  PRECO: number;
+};
+
+/**
+ * Estoque e preço de uma loja (`ESTOQUE_LOJAS`) para os produtos de uma página.
+ * Uma única requisição por página: o XData não tem operador "in", então o lote
+ * vira uma cadeia de "or" no `$filter` e o `$select` evita trazer o resto.
+ */
+export async function GetEstoqueLoja(
+  produtos: string[],
+  loja: string = LOJA_FILIAL,
+): Promise<Map<string, tpEstoqueLoja>> {
+  const codigos = Array.from(
+    new Set(
+      produtos.map((p) => String(p ?? '').trim()).filter((p) => p.length > 0),
+    ),
+  );
+
+  const estoques = new Map<string, tpEstoqueLoja>();
+
+  if (codigos.length === 0) {
+    return estoques;
+  }
+
+  const tokenCookie = await getCookie('token_b2b');
+  const filtro =
+    `lower(LOJA) eq '${sanitizeODataValue(loja.toLowerCase())}' and (` +
+    codigos.map((c) => `PRODUTO eq '${sanitizeODataValue(c)}'`).join(' or ') +
+    ')';
+  const URL = `${ROUTE_ESTOQUE_LOJAS}?$filter=${encodeURIComponent(
+    filtro,
+  )}&$select=PRODUTO,LOJA,ESTOQUE,PRECO&$top=${codigos.length}`;
+
+  const res = await CustomFetch<{ value: iEstoqueLoja[] }>(URL, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `bearer ${tokenCookie}`,
+    },
+  });
+
+  if (res.status !== 200) {
+    throw new Error(`Estoque da loja ${loja}: ${res.status} ${res.statusText}`);
+  }
+
+  (res.body?.value ?? []).forEach((row) => {
+    estoques.set(String(row.PRODUTO).trim(), {
+      ESTOQUE: Number(row.ESTOQUE ?? 0),
+      PRECO: Number(row.PRECO ?? 0),
+    });
+  });
+
+  return estoques;
+}
+
+/**
+ * Acrescenta `QTD_ES`/`PRECO_ES` (filial) aos produtos da página.
+ * A busca não pode quebrar por causa do estoque: se a consulta falhar, os
+ * produtos voltam sem as colunas da filial e a tabela mostra "-".
+ */
+async function ComEstoqueDaLoja(produtos: iProduto[]): Promise<iProduto[]> {
+  if (produtos.length === 0) {
+    return produtos;
+  }
+
+  try {
+    const estoques = await GetEstoqueLoja(produtos.map((p) => p.PRODUTO));
+
+    return produtos.map((produto) => {
+      const loja = estoques.get(String(produto.PRODUTO).trim());
+
+      return loja
+        ? { ...produto, QTD_ES: loja.ESTOQUE, PRECO_ES: loja.PRECO }
+        : produto;
+    });
+  } catch (error) {
+    console.warn('[GetEstoqueLoja] Falha ao buscar estoque da filial:', error);
+    return produtos;
+  }
+}
+
 export async function SuperFindProducts(
   palavras: string,
   top = 10,
@@ -222,7 +311,7 @@ export async function SuperFindProducts(
   if (body?.StatusCode === 200) {
     return {
       value: {
-        value: body.Data ?? [],
+        value: await ComEstoqueDaLoja(body.Data ?? []),
         Qtd_Registros: body.RecordCount ?? 0,
       },
       error: undefined,
@@ -255,7 +344,19 @@ export async function SuperFindProducts(
     termo,
   );
 
-  return SearchProductsViaSQL(termo.toUpperCase(), top, skip);
+  const fallback = await SearchProductsViaSQL(termo.toUpperCase(), top, skip);
+
+  if (fallback.value) {
+    return {
+      value: {
+        Qtd_Registros: fallback.value.Qtd_Registros,
+        value: await ComEstoqueDaLoja(fallback.value.value),
+      },
+      error: undefined,
+    };
+  }
+
+  return fallback;
 }
 
 export async function GetProducts(
@@ -628,25 +729,36 @@ export async function GetSimilares(productCode: string) {
   };
 }
 
-const SQL_ESTOQUE_FILIAIS = (produto: string) =>
-  `SELECT PRODUTO, LOJA, ATUALIZACAO, CURVA_EST, CURVA_FAB, ESTOQUE, MINIMO, MAXIMO, PRECO, LOCAL1, LOCAL2, LOCAL3, PEDIDO FROM ESTOQUE_FILIAIS WHERE PRODUTO = '${assertSafeSQLValue(produto, 'produto')}'`;
-
+/**
+ * Estoque por loja de um produto (tela de detalhe).
+ * Usa o entity set `EstoqueFiliais`, que mapeia `ESTOQUE_LOJAS` — a tabela
+ * `ESTOQUE_FILIAIS` (com I) não existe na base e a consulta antiga sempre
+ * falhava com "Table unknown".
+ */
 export async function GetEstoqueFiliais(
   productCode: string,
 ): Promise<ResponseType<iEstoqueLoja[]>> {
-  const tokenCookie = await getCookie('token_b2b');
-  const sql = SQL_ESTOQUE_FILIAIS(productCode);
+  const produto = String(productCode ?? '').trim();
 
-  const res = await CustomFetch<any>(
-    `${ROUTE_SELECT_SQL}?pSQL=${encodeURIComponent(sql)}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `bearer ${tokenCookie}`,
-      },
+  if (!produto) {
+    return {
+      value: [],
+      error: undefined,
+    };
+  }
+
+  const tokenCookie = await getCookie('token_b2b');
+  const URL = `${ROUTE_ESTOQUE_LOJAS}?$filter=${encodeURIComponent(
+    `PRODUTO eq '${sanitizeODataValue(produto)}'`,
+  )}&$orderby=LOJA`;
+
+  const res = await CustomFetch<{ value: iEstoqueLoja[] }>(URL, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `bearer ${tokenCookie}`,
     },
-  );
+  });
 
   if (res.status !== 200) {
     return {
@@ -658,15 +770,8 @@ export async function GetEstoqueFiliais(
     };
   }
 
-  if (!res.body?.Data || res.body.Data.length === 0) {
-    return {
-      value: [],
-      error: undefined,
-    };
-  }
-
   return {
-    value: res.body.Data as iEstoqueLoja[],
+    value: res.body?.value ?? [],
     error: undefined,
   };
 }

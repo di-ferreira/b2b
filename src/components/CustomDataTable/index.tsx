@@ -25,6 +25,23 @@ export function DataTable<T>({
 }: iTableDataProps<T>) {
   return (
     <table className='border-collapse relative border-none w-full table-fixed'>
+      {/* Larguras só são aplicadas quando declaradas em %, como no modal de
+          busca de produtos. As demais tabelas usam px/rem e continuam com a
+          distribuição automática de antes. */}
+      {columns.some((column) => column.width?.trim().endsWith('%')) && (
+        <colgroup>
+          {columns.map((column, idx) => (
+            <col
+              key={`col-${idx}`}
+              style={
+                column.width?.trim().endsWith('%')
+                  ? { width: column.width }
+                  : undefined
+              }
+            />
+          ))}
+        </colgroup>
+      )}
       <thead className='w-full table-fixed'>
         <TableHeader columns={columns} />
       </thead>

@@ -18,14 +18,6 @@ import { getCookie } from '.';
 const ROUTE_GET_ALL_PRE_VENDA = '/Movimento';
 const ROUTE_SAVE_PRE_VENDA = '/ServiceVendas/NovaPreVenda';
 
-/**
- * Tipo de venda das pré-vendas geradas pelo B2B. `TIPO_VENDA` tem uma única
- * linha na base: ID 1, nome "B2B".
- *
- * Não é exportado: arquivo "use server" só permite exportar funções async.
- */
-const ID_TIPO_VENDA_B2B = 1;
-
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const ROUTE_GET_ALL_MOVIMENTOS_EVENTOS = '/MovimentoEventos';
 const SQL_CONDICAO_PGTO = `SELECT O.id, O.nome, O.parcelas, O.valor_parcela, O.valor_parcela*O.PARCELAS AS VALOR_MINIMO, CASE O.parcelas WHEN 1  THEN O.pz01 WHEN 2  THEN CAST((O.pz01+o.pz02)/2 AS INTEGER) WHEN 3  THEN CAST((O.pz01+o.pz02+O.pz03)/3 AS INTEGER) WHEN 4  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04)/4 AS INTEGER) WHEN 5  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05)/5 AS INTEGER) WHEN 6  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06)/6 AS INTEGER) WHEN 7  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07)/7 AS INTEGER) WHEN 8  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08)/8 AS INTEGER) WHEN 9  THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09)/9 AS INTEGER) WHEN 10 THEN CAST((O.pz01+o.pz02+O.pz03+O.pz04+O.pz05+O.pz06+O.pz07+O.pz08+O.pz09+O.pz10)/10 AS INTEGER) END AS PM, PZ01,PZ02,PZ03,PZ04,PZ05,PZ06,PZ07,PZ08,PZ09,PZ10, TIPO, DESTACAR_DESCONTO, FORMA,O.DESCONTO_MAX FROM OPP O WHERE (O.valor_parcela*O.PARCELAS)<=:VALOR AND O.TIPO='V' AND O.tabela=:TABELA ORDER BY 6`;
@@ -328,19 +320,30 @@ export async function GetTransport() {
 export async function SavePreVenda(PreVenda: iPreVenda) {
   const tokenCookie = await getCookie('token_b2b');
 
+  const PreVendaCompletada: iPreVenda = {
+    ...PreVenda,
+    Origem: 'B2B',
+    ID_TIPO_VENDA: 1,
+  };
+
+  // Diagnóstico do envio (ver o que a API recebe) vs. o retorno.
+  console.log('[SavePreVenda] enviando:', JSON.stringify(PreVendaCompletada));
+
   const responseInsert = await CustomFetch<iMovimento>(ROUTE_SAVE_PRE_VENDA, {
-    body: JSON.stringify({
-      ...PreVenda,
-      // Pré-venda gerada pelo B2B: TIPO_VENDA 1 ("B2B" na base). Fica aqui,
-      // e não no formulário, para valer em qualquer fluxo que gere pré-venda.
-      ID_TIPO_VENDA: ID_TIPO_VENDA_B2B,
-    }),
+    body: JSON.stringify(PreVendaCompletada),
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `bearer ${tokenCookie}`,
     },
   });
+
+  console.log(
+    '[SavePreVenda] retornado:',
+    responseInsert.status,
+    responseInsert.statusText,
+    JSON.stringify(responseInsert.body),
+  );
 
   if (responseInsert.status !== 200) {
     return {

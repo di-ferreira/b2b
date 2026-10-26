@@ -11,7 +11,7 @@ import {
   SelectItem,
   SelectTrigger,
 } from '@/components/ui/select';
-import { KEY_NAME_TABLE_PAGINATION } from '@/constants';
+import { KEY_NAME_TABLE_PAGINATION, ROWS_PER_PAGE_OPTIONS } from '@/constants';
 import { loadStorage, saveStorage } from '@/lib/utils';
 interface iDataTablePagination<T> {
   QuantityRegisters: number;
@@ -31,11 +31,10 @@ export function TablePagination<T>({
   OnFetchData,
   rowsQtd,
 }: iDataTablePagination<T>) {
-  const RowsPerPageOptions = [10, 20, 50, 100];
   const [PaginationOptions, setPaginationOptions] =
     useState<tpPaginationValues>({
       CurrentPage: 1,
-      RowsPerPage: RowsPerPageOptions[3],
+      RowsPerPage: ROWS_PER_PAGE_OPTIONS[0],
       TotalPages: 0,
       TotalRegisters: QuantityRegisters,
     });
@@ -52,20 +51,19 @@ export function TablePagination<T>({
   };
 
   const ChangeRowsPerPage = (value: Number) => {
+    const rows = Number(value) || ROWS_PER_PAGE_OPTIONS[0];
     const pagination = {
       ...PaginationOptions,
-      RowsPerPage: Number(value),
+      CurrentPage: 1,
+      RowsPerPage: rows,
+      TotalPages: Math.max(Math.ceil(QuantityRegisters / rows), 1),
+      TotalRegisters: QuantityRegisters,
     };
     setPaginationOptions(pagination);
 
     saveStorage<tpPaginationValues>(KEY_NAME_TABLE_PAGINATION, pagination);
 
-    OnFetchData({
-      top: value ? Number(value) : PaginationOptions.RowsPerPage,
-      skip:
-        PaginationOptions.RowsPerPage * PaginationOptions.CurrentPage -
-        PaginationOptions.RowsPerPage,
-    });
+    OnFetchData({ top: rows, skip: 0 });
   };
 
   const GoToFirstPage = () => {
@@ -112,38 +110,60 @@ export function TablePagination<T>({
     saveStorage<tpPaginationValues>(KEY_NAME_TABLE_PAGINATION, pagination);
     OnFetchData({
       top: pagination.RowsPerPage,
-      skip: pagination.TotalRegisters - pagination.RowsPerPage,
+      skip: (pagination.TotalPages - 1) * pagination.RowsPerPage,
     });
   };
 
+  // Só o tamanho de página vem do storage (preferência do usuário). Total e
+  // página atual são sempre da lista que está na tela: o storage é
+  // compartilhado entre tabelas e trazia o total de outra tela.
   useEffect(() => {
-    const storagePagination = loadStorage<tpPaginationValues>(
-      KEY_NAME_TABLE_PAGINATION
-    );
+    let storageRows = 0;
+    try {
+      const storagePagination = loadStorage<tpPaginationValues>(
+        KEY_NAME_TABLE_PAGINATION
+      );
+      storageRows = Number(storagePagination?.RowsPerPage);
+    } catch {
+      storageRows = 0;
+    }
 
-    const newPagination: tpPaginationValues =
-      storagePagination !== null
-        ? {
-            ...storagePagination,
-            TotalPages: Math.ceil(
-              storagePagination.TotalRegisters / storagePagination.RowsPerPage
-            ),
-          }
-        : {
-            CurrentPage: 1,
-            RowsPerPage: RowsPerPageOptions[0],
-            TotalPages: Math.ceil(QuantityRegisters / RowsPerPageOptions[0]),
-            TotalRegisters: QuantityRegisters,
-          };
+    const rowsPerPage = ROWS_PER_PAGE_OPTIONS.includes(storageRows)
+      ? storageRows
+      : ROWS_PER_PAGE_OPTIONS[0];
 
-    setPaginationOptions(
-      (old) =>
-        (old = {
-          ...old,
-          ...newPagination,
-        })
-    );
+    setPaginationOptions({
+      CurrentPage: 1,
+      RowsPerPage: rowsPerPage,
+      TotalPages: Math.max(Math.ceil(QuantityRegisters / rowsPerPage), 1),
+      TotalRegisters: QuantityRegisters,
+    });
   }, []);
+
+  // Nova busca / item incluído / item removido: a lista mudou de tamanho,
+  // então volta para a primeira página, que é o que o pai recarregou.
+  useEffect(() => {
+    setPaginationOptions((old) => {
+      const totalPages = Math.max(
+        Math.ceil(QuantityRegisters / old.RowsPerPage),
+        1
+      );
+
+      if (
+        old.TotalRegisters === QuantityRegisters &&
+        old.TotalPages === totalPages
+      ) {
+        return old;
+      }
+
+      return {
+        ...old,
+        CurrentPage: 1,
+        TotalPages: totalPages,
+        TotalRegisters: QuantityRegisters,
+      };
+    });
+  }, [QuantityRegisters, PaginationOptions.RowsPerPage]);
 
   return (
     <tfoot className='w-full table-fixed'>
@@ -169,7 +189,7 @@ export function TablePagination<T>({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    {RowsPerPageOptions.map((size) => (
+                    {ROWS_PER_PAGE_OPTIONS.map((size) => (
                       <SelectItem
                         key={size}
                         value={String(size)}

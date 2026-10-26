@@ -181,11 +181,24 @@ async function CreateQueryParams(filter: iFilter<iProduto>): Promise<string> {
 }
 
 export async function SuperFindProducts(
-  filter: iFilter<iProduto>,
+  palavras: string,
+  top = 10,
+  skip = 0,
 ): Promise<ResponseType<iDataResultTable<iProduto>>> {
+  const termo = String(palavras ?? '').trim();
+
+  if (!termo) {
+    return {
+      value: { value: [], Qtd_Registros: 0 },
+      error: undefined,
+    };
+  }
+
   const tokenCookie = await getCookie('token_b2b');
-  const palavras = filter?.filter?.[0] ? encodeURIComponent(String(filter.filter[0].value)) : '';
-  const URL = `${ROUTE_SUPER_BUSCA}?Palavras=${palavras}&PularRegistros=${filter?.skip ?? 0}&QuantidadeRegistros=${filter?.top ?? 15}&$expand=FABRICANTE,FORNECEDOR,GRUPO,ListaChaves,ListaSimilares`;
+  const URL = `${ROUTE_SUPER_BUSCA}?Palavras=${encodeURIComponent(
+    termo,
+  )}&PularRegistros=${skip}&QuantidadeRegistros=${top}`;
+
   const res = await CustomFetch<iApiResult<iProduto[]>>(URL, {
     method: 'GET',
     headers: {
@@ -193,6 +206,7 @@ export async function SuperFindProducts(
       Authorization: `bearer ${tokenCookie}`,
     },
   });
+
   if (res.status !== 200) {
     return {
       value: undefined,
@@ -203,13 +217,45 @@ export async function SuperFindProducts(
     };
   }
 
-  return {
-    value: {
-      value: res.body!.Data,
-      Qtd_Registros: res.body!.RecordCount,
-    },
-    error: undefined,
-  };
+  const body = res.body;
+
+  if (body?.StatusCode === 200) {
+    return {
+      value: {
+        value: body.Data ?? [],
+        Qtd_Registros: body.RecordCount ?? 0,
+      },
+      error: undefined,
+    };
+  }
+
+  if (body?.StatusCode !== 400) {
+    return {
+      value: undefined,
+      error: {
+        code: String(body?.StatusCode ?? 500),
+        message: String(body?.StatusMessage ?? 'Falha na super busca'),
+      },
+    };
+  }
+
+  // StatusCode 400 com HTTP 200 significa "nenhum produto encontrado".
+  // Página seguinte vazia é apenas fim da lista, não vale nova busca.
+  if (skip > 0) {
+    return {
+      value: { value: [], Qtd_Registros: 0 },
+      error: undefined,
+    };
+  }
+
+  // A super busca não cobre trechos numéricos ("4268") nem termos com número
+  // ("CRETA 1.6"): cai para a busca por LIKE, que encontra esses casos.
+  console.warn(
+    '[SuperFindProducts] SuperBusca sem resultados, usando busca SQL:',
+    termo,
+  );
+
+  return SearchProductsViaSQL(termo.toUpperCase(), top, skip);
 }
 
 export async function GetProducts(

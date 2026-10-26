@@ -242,6 +242,11 @@ export interface iPreVenda {
   Entrega: 'S' | 'N';
   TipoEntrega?: 'VEM BUSCAR' | 'CARRO';
   Origem?: string;
+  /**
+   * Tipo de venda gravado na pré-venda. O app sempre envia 1 (B2B, única
+   * linha de `TIPO_VENDA`); `SavePreVenda` força esse valor no envio.
+   */
+  ID_TIPO_VENDA?: number;
   Itens: iItemPreVenda[];
 }
 

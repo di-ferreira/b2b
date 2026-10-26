@@ -11,7 +11,7 @@ vi.mock('@/app/actions', () => ({
 
 import { CustomFetch } from '@/services/api';
 import { getCookie } from '@/app/actions';
-import { ID_TIPO_VENDA_B2B, SavePreVenda } from '@/app/actions/preVenda';
+import { SavePreVenda } from '@/app/actions/preVenda';
 
 const mockCustomFetch = vi.mocked(CustomFetch);
 const mockGetCookie = vi.mocked(getCookie);
@@ -80,7 +80,6 @@ describe('SavePreVenda', () => {
 
     await SavePreVenda(preVenda());
 
-    expect(ID_TIPO_VENDA_B2B).toBe(1);
     expect(corpoEnviado().ID_TIPO_VENDA).toBe(1);
   });
 

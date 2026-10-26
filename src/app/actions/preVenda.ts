@@ -21,8 +21,10 @@ const ROUTE_SAVE_PRE_VENDA = '/ServiceVendas/NovaPreVenda';
 /**
  * Tipo de venda das pré-vendas geradas pelo B2B. `TIPO_VENDA` tem uma única
  * linha na base: ID 1, nome "B2B".
+ *
+ * Não é exportado: arquivo "use server" só permite exportar funções async.
  */
-export const ID_TIPO_VENDA_B2B = 1;
+const ID_TIPO_VENDA_B2B = 1;
 
 const ROUTE_SELECT_SQL = '/ServiceSistema/SelectSQL';
 const ROUTE_GET_ALL_MOVIMENTOS_EVENTOS = '/MovimentoEventos';

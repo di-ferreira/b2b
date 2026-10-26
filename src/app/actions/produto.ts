@@ -186,7 +186,7 @@ async function CreateQueryParams(filter: iFilter<iProduto>): Promise<string> {
   return `?${filterString}${ResultTop}${ResultSkip}${ResultOrderBy}${expand}&$inlinecount=allpages`;
 }
 
-export type tpEstoqueLoja = {
+type tpEstoqueLoja = {
   ESTOQUE: number;
   PRECO: number;
 };

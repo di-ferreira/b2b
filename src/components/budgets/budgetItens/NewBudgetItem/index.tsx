@@ -37,9 +37,15 @@ const NewBudgetItemSearch = ({ budget, CallBack }: iNewBudgetItem) => {
   async function handleAddProduct(prod: iProduto) {
     if (saving) return;
 
-    if (estoqueDisponivel(prod) <= 0) {
+    const disponivel = estoqueDisponivel(prod);
+
+    if (disponivel <= 0) {
       ToastNotify({
-        message: 'Produto sem estoque disponível para venda',
+        message: `Produto sem estoque disponível para venda (RJ: ${
+          prod.QTDATUAL ?? 0
+        } - garantia reservada: ${prod.QTD_GARANTIA ?? 0} = ${
+          disponivel ?? 0
+        }).`,
         type: 'error',
       });
       return;

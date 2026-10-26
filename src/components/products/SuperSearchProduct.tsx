@@ -7,6 +7,7 @@ import { SuperFindProducts } from '@/app/actions/produto';
 import useModal from '@/hooks/useModal';
 import { KEY_NAME_TABLE_PAGINATION, ROWS_PER_PAGE_OPTIONS } from '@/constants';
 import { getErrorMessage, loadStorage } from '@/lib/utils';
+import { estoqueDisponivel } from '@/lib/product';
 import { faPlus, faSearch } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { Suspense, useEffect, useState } from 'react';
@@ -97,17 +98,23 @@ const SuperSearchProducts = ({ data, words, CallBack }: iProps) => {
     {
       key: 'NOME',
       title: 'NOME',
-      width: '29%',
+      width: '25%',
     },
     {
       key: 'FABRICANTE.NOME',
       title: 'FABRICANTE',
-      width: '19%',
+      width: '17%',
     },
     {
       key: 'QTDATUAL',
       title: 'QTD_RJ',
       width: '6%',
+    },
+    {
+      key: 'DISPONIVEL',
+      title: 'DISP_RJ',
+      width: '6%',
+      render: (_, item) => String(estoqueDisponivel(item)),
     },
     {
       key: 'PRECO',

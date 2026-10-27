@@ -63,19 +63,26 @@ export async function GET(
       const bancoRegistro = await findBancoBoleto(banco, bancos);
 
       if (bancoRegistro?.PATH_GERARPDF) {
-        const folderPath = normalizePath(bancoRegistro.PATH_GERARPDF);
+        const rawFolder = String(bancoRegistro.PATH_GERARPDF).trim();
+        const isUnc = rawFolder.startsWith('\\\\');
+        const folderPath = isUnc ? rawFolder : normalizePath(rawFolder);
+        console.log('[boletos] folderPath =', JSON.stringify(folderPath));
+
         const candidateNames = [
           docSan ? `Boleto_${cic}_${docSan}_${nossoNumero}.pdf` : '',
           fileName,
         ].filter(Boolean) as string[];
 
         for (const cand of candidateNames) {
-          const candidate = path.posix.normalize(`${folderPath}/${cand}`);
+          const candidate = isUnc
+            ? path.win32.join(folderPath, cand)
+            : path.posix.normalize(`${folderPath}/${cand}`);
           if (fs.existsSync(candidate)) {
             fileBuffer = fs.readFileSync(candidate);
             foundFileName = cand;
             break;
           }
+          console.log('[boletos] candidate não existe:', candidate);
         }
 
         // Heurística final quando DOC não vier: buscar arquivo que comece com
@@ -89,12 +96,14 @@ export async function GET(
             );
             const match = names.find((n) => pattern.test(n));
             if (match) {
-              const candidate = path.posix.normalize(`${folderPath}/${match}`);
+              const candidate = isUnc
+                ? path.win32.join(folderPath, match)
+                : path.posix.normalize(`${folderPath}/${match}`);
               fileBuffer = fs.readFileSync(candidate);
               foundFileName = match;
             }
           } catch (e) {
-            console.warn('[boletos] readdir falhou:', e);
+            console.warn('[boletos] readdir falhou:', e, 'folder=', folderPath);
           }
         }
       }

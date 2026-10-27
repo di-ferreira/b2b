@@ -1,64 +1,13 @@
-// import fs from 'fs';
-// import { NextRequest, NextResponse } from 'next/server';
-// import path from 'path';
-
-// const PDFS_DIR = process.env.PDFS_DIR || '';
-
-// export async function GET(
-//   req: NextRequest,
-//   { params }: { params: { banco: string; cic: string; nossoNumero: string } }
-// ) {
-//   try {
-//     let { banco, cic, nossoNumero } = params;
-//
-
-//     // Normaliza banco igual seu código original
-//     if (banco.toUpperCase() === 'CAIXA ECONOMICA') {
-//       banco = 'caixa';
-//     }
-//     banco = banco.toLocaleLowerCase().trim().replaceAll(' ', '');
-
-//     // Monta o nome do arquivo esperado
-//     const fileName = `Boleto_${cic}_${nossoNumero}.pdf`;
-
-//     // Constrói o caminho completo
-//     const filePath = path.join(PDFS_DIR, banco, fileName);
-//
-
-//     if (!fs.existsSync(filePath)) {
-//       return NextResponse.json(
-//         { error: 'Boleto não encontrado' },
-//         { status: 404 }
-//       );
-//     }
-
-//     const fileBuffer = fs.readFileSync(filePath);
-
-//     return new NextResponse(fileBuffer, {
-//       headers: {
-//         'Content-Type': 'application/pdf',
-//         'Content-Disposition': `attachment; filename="${encodeURIComponent(
-//           fileName
-//         )}"`,
-//         'Cache-Control': 'no-cache, no-store, must-revalidate',
-//         Pragma: 'no-cache',
-//         Expires: '0',
-//       },
-//     });
-//   } catch (error) {
-//
-//     return NextResponse.json(
-//       { error: 'Erro interno ao gerar boleto' },
-//       { status: 500 }
-//     );
-//   }
-// }
-
 import fs from 'fs';
 import { NextRequest, NextResponse } from 'next/server';
 import path from 'path';
+import { GetBancosBoleto, findBancoBoleto } from '@/app/actions/contas';
 
 const PDFS_DIR = process.env.PDFS_DIR || '';
+
+function normalizePath(value: string): string {
+  return String(value ?? '').replace(/\\\\/g, '/').replace(/\\/g, '/');
+}
 
 function resolveBancoFolder(bancoRaw: string): string[] {
   const normalized = bancoRaw
@@ -66,7 +15,6 @@ function resolveBancoFolder(bancoRaw: string): string[] {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[\s_]+/g, '');
-
   if (normalized === 'caixaeconomica' || normalized === 'caixa') {
     return ['caixa'];
   }
@@ -77,11 +25,8 @@ function resolveBancoFolder(bancoRaw: string): string[] {
     return ['bancodobrasil'];
   }
   if (normalized.startsWith('itau')) {
-    // Se vier itau, tenta nas duas pastas
     return ['itau', 'itau2'];
   }
-
-  // fallback: usa o normalizado
   return [normalized];
 }
 
@@ -90,7 +35,7 @@ export async function GET(
   { params }: { params: { banco: string; cic: string; nossoNumero: string } }
 ) {
   try {
-    let { banco, cic, nossoNumero } = params;
+    const { banco, cic, nossoNumero } = params;
 
     if (!/^\d+$/.test(cic) || !/^\d+$/.test(nossoNumero)) {
       return NextResponse.json(
@@ -101,27 +46,46 @@ export async function GET(
 
     const fileName = `Boleto_${cic}_${nossoNumero}.pdf`;
 
-    const possibleFolders = resolveBancoFolder(banco);
-
-    for (const folder of possibleFolders) {
-      if (!/^[a-z0-9]+$/.test(folder)) {
-        return NextResponse.json(
-          { error: 'Parâmetro banco inválido' },
-          { status: 400 }
-        );
-      }
-    }
-
     let fileBuffer: Buffer | null = null;
     let foundFileName: string | null = null;
 
-    for (const folder of possibleFolders) {
-      const filePath = path.join(PDFS_DIR, folder, fileName);
+    // 1) Caminho via BancoBoleto (PATH_GERARPDF)
+    try {
+      const bancos = await GetBancosBoleto();
+      const bancoRegistro = await findBancoBoleto(banco, bancos);
 
-      if (fs.existsSync(filePath)) {
-        fileBuffer = fs.readFileSync(filePath);
-        foundFileName = fileName;
-        break;
+      if (bancoRegistro?.PATH_GERARPDF) {
+        const folderPath = normalizePath(bancoRegistro.PATH_GERARPDF);
+        const candidate = path.posix.normalize(`${folderPath}/${fileName}`);
+        if (fs.existsSync(candidate)) {
+          fileBuffer = fs.readFileSync(candidate);
+          foundFileName = fileName;
+        }
+      }
+    } catch (err) {
+      console.warn('[boletos] falha ao consultar BancoBoleto:', err);
+    }
+
+    // 2) Fallback legado: PDFS_DIR/banco/folder/Boleto_...pdf
+    if (!fileBuffer || !foundFileName) {
+      const possibleFolders = resolveBancoFolder(banco);
+
+      for (const folder of possibleFolders) {
+        if (!/^[a-z0-9]+$/.test(folder)) {
+          return NextResponse.json(
+            { error: 'Parâmetro banco inválido' },
+            { status: 400 }
+          );
+        }
+      }
+
+      for (const folder of possibleFolders) {
+        const filePath = path.join(PDFS_DIR, folder, fileName);
+        if (fs.existsSync(filePath)) {
+          fileBuffer = fs.readFileSync(filePath);
+          foundFileName = fileName;
+          break;
+        }
       }
     }
 
@@ -150,4 +114,3 @@ export async function GET(
     );
   }
 }
-

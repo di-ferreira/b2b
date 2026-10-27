@@ -177,8 +177,7 @@ export async function GetContasDashboard() {
 
   const FILTER =
     `?$filter=CLIENTE eq ${Cliente} and TIPO eq 'BOLETO' and CANCELADO eq 'N' and CONTA eq 'R' and RESTA ge 1 and EMISSAO_BOLETO ne null and VENCIMENTO lt '${cutoff}'` +
-    `&$expand=CLIENTE($select=CIC)` +
-    `&$select=CONTA,TIPO,VENCIMENTO,REGISTRO,DOC,TOTAL,RESTA,EMISSAO_BOLETO,NOSSO_NUMERO` +
+    `&$expand=CLIENTE` +
     `&$orderby=VENCIMENTO desc&$top=20&$inlinecount=allpages`;
 
   const response = await CustomFetch<{

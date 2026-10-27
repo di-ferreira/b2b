@@ -70,10 +70,7 @@ export async function GetMovimentosDashboard() {
   const ClienteLocal: string = await getCookie('user_b2b');
   const tokenCookie = await getCookie('token_b2b');
 
-  const FILTER = `?$filter=MOVIMENTO/CLIENTE eq ${ClienteLocal} and MOVIMENTO/TIPOMOV eq 'PRE-VENDA' and MOVIMENTO/CANCELADO eq 'N'` +
-    `&$select=STATUS` +
-    `&$expand=MOVIMENTO($select=MOVIMENTO,DATA,DOC,TOTAL,TIPOMOV,CANCELADO)` +
-    `&$orderby=MOVIMENTO/MOVIMENTO desc&$top=10&$inlinecount=allpages`;
+  const FILTER = `?$filter=MOVIMENTO/CLIENTE eq ${ClienteLocal} and MOVIMENTO/TIPOMOV eq 'PRE-VENDA' and MOVIMENTO/CANCELADO eq 'N'&$inlinecount=allpages&$orderby=MOVIMENTO/MOVIMENTO desc&$expand=MOVIMENTO&$top=10`;
 
   const response = await CustomFetch<{
     '@xdata.count': number;

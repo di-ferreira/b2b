@@ -116,8 +116,8 @@ describe('SavePreVenda', () => {
 
     const corpo = corpoEnviado(1);
     const keys = Object.keys(corpo).sort();
-    expect(keys).toEqual(['ID_TIPO_VENDA', 'ORIGEM']);
-    expect(corpo.ORIGEM).toBe('B2B');
+    expect(keys).toEqual(['ID_TIPO_VENDA']);
+    // ORIGEM não é enviada porque o backend não comporta VARCHAR(1).
     expect(corpo.ID_TIPO_VENDA).toBe(1);
   });
 

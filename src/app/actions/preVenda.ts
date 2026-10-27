@@ -374,7 +374,7 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
     };
   }
 
-  const origemPatch = { ORIGEM: 'B2B', ID_TIPO_VENDA: 1 };
+  const origemPatch = { ID_TIPO_VENDA: 1 };
 
   // Segunda requisição: o backend não trata ORIGEM/ID_TIPO_VENDA no insert.
   console.log(`[SavePreVenda] patch ${movimentoId} com`, JSON.stringify(origemPatch));

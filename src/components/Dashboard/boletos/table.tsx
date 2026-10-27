@@ -8,7 +8,6 @@ import { DataTable } from '@/components/CustomDataTable';
 import ErrorMessage from '@/components/ErrorMessage';
 import { Loading } from '@/components/Loading';
 import { KEY_NAME_TABLE_PAGINATION } from '@/constants';
-import { removeStorage } from '@/lib/utils';
 import dayjs from 'dayjs';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import ButtonBoleto from './ButtonBoleto';
@@ -36,7 +35,6 @@ function DataTableBankSlip() {
   }, []);
 
   useEffect(() => {
-    removeStorage(KEY_NAME_TABLE_PAGINATION);
     handleBudgets({ top: 10 });
   }, []);
 

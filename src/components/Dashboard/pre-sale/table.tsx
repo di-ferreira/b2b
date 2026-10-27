@@ -7,8 +7,6 @@ import { GetMovimentosDashboard } from '@/app/actions/preVenda';
 import { DataTable } from '@/components/CustomDataTable';
 import ErrorMessage from '@/components/ErrorMessage';
 import { Loading } from '@/components/Loading';
-import { KEY_NAME_TABLE_PAGINATION } from '@/constants';
-import { removeStorage } from '@/lib/utils';
 import { Suspense, useCallback, useEffect, useState } from 'react';
 import { headers } from './columns';
 
@@ -34,7 +32,6 @@ function DataTableSaleAwaiting() {
   }, []);
 
   useEffect(() => {
-    removeStorage(KEY_NAME_TABLE_PAGINATION);
     handleBudgets({ top: 10 });
   }, []);
 

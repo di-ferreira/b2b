@@ -1,15 +1,66 @@
 'use server';
-import { iContas } from '@/@types/Contas';
+import { iBancoBoleto, iContas } from '@/@types/Contas';
 import fs from 'fs';
+import { CustomFetch } from '@/services/api';
 import { NextResponse } from 'next/server';
 import path from 'path';
+import { getCookie } from '.';
 
 const PDFS_DIR = process.env.PDFS_DIR || '';
 
-if (!PDFS_DIR) {
-  throw new Error(
-    'Variável de ambiente PDFS_DIR não definida. Verifique .env.local'
-  );
+const ROUTE_GET_BANCO_BOLETO = '/BancoBoleto';
+
+// Cache curto para evitar chamada a cada download (ex.: 1 min).
+let cacheBancos: { data: iBancoBoleto[]; expires: number } | null = null;
+
+function normalizeBankName(value: string): string {
+  return String(value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z]/g, '');
+}
+
+export async function GetBancosBoleto(): Promise<iBancoBoleto[]> {
+  const tokenCookie = await getCookie('token_b2b');
+  if (cacheBancos && Date.now() < cacheBancos.expires) {
+    return cacheBancos.data;
+  }
+
+  try {
+    const response = await CustomFetch<{ value: iBancoBoleto[] }>(
+      ROUTE_GET_BANCO_BOLETO,
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `bearer ${tokenCookie}`,
+        },
+      }
+    );
+
+    if (response.status !== 200 || !response.body?.value) {
+      return cacheBancos?.data ?? [];
+    }
+
+    cacheBancos = {
+      data: response.body.value,
+      expires: Date.now() + 60_000,
+    };
+    return cacheBancos.data;
+  } catch (error) {
+    console.error('[GetBancosBoleto] erro:', error);
+    return cacheBancos?.data ?? [];
+  }
+}
+
+// Exportado como utilitário para reutilização na rota.
+export async function findBancoBoleto(
+  nome: string,
+  bancos: iBancoBoleto[]
+): Promise<iBancoBoleto | undefined> {
+  const alvo = normalizeBankName(nome);
+  return bancos.find((b) => normalizeBankName(b.NOME_BANCO) === alvo);
 }
 export async function GetBoletoCliente(conta: iContas): Promise<NextResponse> {
   try {

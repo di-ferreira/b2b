@@ -1,5 +1,15 @@
 import { iCliente } from './Cliente';
 
+export interface iBancoBoleto {
+  ID: number;
+  NUMERO_BANCO: string;
+  NOME_BANCO: string;
+  NOME_AGENCIA: string | null;
+  PATH_GERARPDF: string | null;
+  ACEITE: string;
+  ATIVO: string;
+}
+
 export interface iContas {
   $id: number;
   CONTA: string;

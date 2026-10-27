@@ -16,7 +16,11 @@ export default function ButtonBoleto(conta: { conta: iContas }) {
 
     const cic = conta.conta.CLIENTE.CIC.replace(/\D/g, '');
     const nossa = String(conta.conta.NOSSO_NUMERO ?? '').trim();
-    const doc = String((conta.conta as any).DOC ?? '').replace(/[^\w\d-]/g, '');
+    const doc = String(
+      (conta.conta as any).Doc ??
+        (conta.conta as any).DOC ??
+        ''
+    ).replace(/[^\w\d-]/g, '');
     const url = `/api/boletos/${banco}/${cic}/${nossa}?doc=${encodeURIComponent(
       doc,
     )}`;

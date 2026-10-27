@@ -9,6 +9,10 @@ function normalizePath(value: string): string {
   return String(value ?? '').replace(/\\\\/g, '/').replace(/\\/g, '/');
 }
 
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&');
+}
+
 function resolveBancoFolder(bancoRaw: string): string[] {
   const normalized = bancoRaw
     .normalize('NFD')
@@ -46,6 +50,10 @@ export async function GET(
 
     const fileName = `Boleto_${cic}_${nossoNumero}.pdf`;
 
+    const docSan = String(req.nextUrl.searchParams.get('doc') || '')
+      .replace(/[^\w\d-]/g, '')
+      .slice(0, 30);
+
     let fileBuffer: Buffer | null = null;
     let foundFileName: string | null = null;
 
@@ -56,10 +64,38 @@ export async function GET(
 
       if (bancoRegistro?.PATH_GERARPDF) {
         const folderPath = normalizePath(bancoRegistro.PATH_GERARPDF);
-        const candidate = path.posix.normalize(`${folderPath}/${fileName}`);
-        if (fs.existsSync(candidate)) {
-          fileBuffer = fs.readFileSync(candidate);
-          foundFileName = fileName;
+        const candidateNames = [
+          docSan ? `Boleto_${cic}_${docSan}_${nossoNumero}.pdf` : '',
+          fileName,
+        ].filter(Boolean) as string[];
+
+        for (const cand of candidateNames) {
+          const candidate = path.posix.normalize(`${folderPath}/${cand}`);
+          if (fs.existsSync(candidate)) {
+            fileBuffer = fs.readFileSync(candidate);
+            foundFileName = cand;
+            break;
+          }
+        }
+
+        // Heurística final quando DOC não vier: buscar arquivo que comece com
+        // Boleto_<cic>_ e termine em _<nossoNumero>.pdf (qualquer segmento meio).
+        if (!fileBuffer || !foundFileName) {
+          try {
+            const names = fs.readdirSync(folderPath);
+            const pattern = new RegExp(
+              `^Boleto_${escapeRegex(cic)}_(.*)_?${escapeRegex(nossoNumero)}\\.pdf$`,
+              'i'
+            );
+            const match = names.find((n) => pattern.test(n));
+            if (match) {
+              const candidate = path.posix.normalize(`${folderPath}/${match}`);
+              fileBuffer = fs.readFileSync(candidate);
+              foundFileName = match;
+            }
+          } catch (e) {
+            console.warn('[boletos] readdir falhou:', e);
+          }
         }
       }
     } catch (err) {

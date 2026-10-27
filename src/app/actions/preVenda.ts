@@ -320,17 +320,11 @@ export async function GetTransport() {
 export async function SavePreVenda(PreVenda: iPreVenda) {
   const tokenCookie = await getCookie('token_b2b');
 
-  const PreVendaCompletada: iPreVenda = {
-    ...PreVenda,
-    Origem: 'B2B',
-    ID_TIPO_VENDA: 1,
-  };
-
-  // Diagnóstico do envio (ver o que a API recebe) vs. o retorno.
-  console.log('[SavePreVenda] enviando:', JSON.stringify(PreVendaCompletada));
+  // Diagnóstico do payload enviado para o insert.
+  console.log('[SavePreVenda] enviando (insert):', JSON.stringify(PreVenda));
 
   const responseInsert = await CustomFetch<iMovimento>(ROUTE_SAVE_PRE_VENDA, {
-    body: JSON.stringify(PreVendaCompletada),
+    body: JSON.stringify(PreVenda),
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -338,25 +332,65 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
     },
   });
 
+  // Diagnóstico do retorno do insert.
   console.log(
-    '[SavePreVenda] retornado:',
+    '[SavePreVenda] retornado (insert):',
     responseInsert.status,
     responseInsert.statusText,
     JSON.stringify(responseInsert.body),
   );
 
-  if (responseInsert.status !== 200) {
+  if (responseInsert.status !== 200 || !responseInsert.body) {
     return {
       value: undefined,
       error: {
         code: String(responseInsert.status),
-        message: String(responseInsert.statusText),
+        message: responseInsert.statusText,
       },
     };
   }
 
+  const movimentoId = responseInsert.body.MOVIMENTO;
+  const origemPatch = { ORIGEM: 'B2B', ID_TIPO_VENDA: 1 };
+
+  // Segunda requisição: o backend não trata ORIGEM/ID_TIPO_VENDA no insert.
+  // Aqui atualizamos o movimento criado (dois fetchs conforme regra de negócio).
+  console.log(
+    `[SavePreVenda] patch ${movimentoId} com`,
+    JSON.stringify(origemPatch),
+  );
+
+  const responsePatch = await CustomFetch<iMovimento>(
+    `/Movimento(${movimentoId})`,
+    {
+      body: JSON.stringify(origemPatch),
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `bearer ${tokenCookie}`,
+      },
+    },
+  );
+
+  console.log(
+    '[SavePreVenda] retornado (patch):',
+    responsePatch.status,
+    responsePatch.statusText,
+    JSON.stringify(responsePatch.body),
+  );
+
+  if (responsePatch.status !== 200 || !responsePatch.body) {
+    console.warn(
+      '[SavePreVenda] PATCH de ORIGEM/ID_TIPO_VENDA falhou; a pré-venda foi gerada com os defaults do backend.',
+    );
+    return {
+      value: responseInsert.body,
+      error: undefined,
+    };
+  }
+
   return {
-    value: responseInsert.body,
+    value: responsePatch.body,
     error: undefined,
   };
 }

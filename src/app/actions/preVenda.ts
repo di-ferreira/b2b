@@ -323,7 +323,12 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
   // Diagnóstico do payload enviado para o insert.
   console.log('[SavePreVenda] enviando (insert):', JSON.stringify(PreVenda));
 
-  const responseInsert = await CustomFetch<iMovimento>(ROUTE_SAVE_PRE_VENDA, {
+  const responseInsert = await CustomFetch<{
+    StatusCode?: number;
+    StatusMessage?: string;
+    RecordCount?: number;
+    Data?: iMovimento;
+  }>(ROUTE_SAVE_PRE_VENDA, {
     body: JSON.stringify(PreVenda),
     method: 'POST',
     headers: {
@@ -332,7 +337,7 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
     },
   });
 
-  // Diagnóstico do retorno do insert.
+  // Diagnóstico do retorno do insert (formato envelope iApiResult).
   console.log(
     '[SavePreVenda] retornado (insert):',
     responseInsert.status,
@@ -340,25 +345,39 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
     JSON.stringify(responseInsert.body),
   );
 
-  if (responseInsert.status !== 200 || !responseInsert.body) {
+  const inserted = responseInsert.body?.Data;
+
+  if (
+    responseInsert.status !== 200 ||
+    responseInsert.body?.StatusCode !== 200 ||
+    !inserted
+  ) {
     return {
       value: undefined,
       error: {
-        code: String(responseInsert.status),
-        message: responseInsert.statusText,
+        code: String(responseInsert.body?.StatusCode ?? responseInsert.status),
+        message:
+          responseInsert.body?.StatusMessage ?? responseInsert.statusText,
       },
     };
   }
 
-  const movimentoId = responseInsert.body.MOVIMENTO;
+  const movimentoId = inserted.MOVIMENTO;
+
+  if (movimentoId === undefined || movimentoId === null) {
+    console.warn(
+      '[SavePreVenda] Movimento sem id após o insert; PATCH não será tentado.',
+    );
+    return {
+      value: inserted,
+      error: undefined,
+    };
+  }
+
   const origemPatch = { ORIGEM: 'B2B', ID_TIPO_VENDA: 1 };
 
   // Segunda requisição: o backend não trata ORIGEM/ID_TIPO_VENDA no insert.
-  // Aqui atualizamos o movimento criado (dois fetchs conforme regra de negócio).
-  console.log(
-    `[SavePreVenda] patch ${movimentoId} com`,
-    JSON.stringify(origemPatch),
-  );
+  console.log(`[SavePreVenda] patch ${movimentoId} com`, JSON.stringify(origemPatch));
 
   const responsePatch = await CustomFetch<iMovimento>(
     `/Movimento(${movimentoId})`,
@@ -379,19 +398,22 @@ export async function SavePreVenda(PreVenda: iPreVenda) {
     JSON.stringify(responsePatch.body),
   );
 
-  if (responsePatch.status !== 200 || !responsePatch.body) {
+  const patched =
+    (responsePatch.body as { Data?: iMovimento } | null)?.Data ??
+    responsePatch.body;
+
+  if (responsePatch.status !== 200 || !patched) {
     console.warn(
       '[SavePreVenda] PATCH de ORIGEM/ID_TIPO_VENDA falhou; a pré-venda foi gerada com os defaults do backend.',
     );
     return {
-      value: responseInsert.body,
+      value: inserted,
       error: undefined,
     };
   }
 
   return {
-    value: responsePatch.body,
+    value: patched,
     error: undefined,
   };
 }
-

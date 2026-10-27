@@ -57,7 +57,12 @@ function okInsert(movimento = 10) {
   return {
     status: 200,
     statusText: 'OK',
-    body: { MOVIMENTO: movimento, MOV: 'P1' },
+    body: {
+      StatusCode: 200,
+      StatusMessage: 'sucesso',
+      RecordCount: 0,
+      Data: { MOVIMENTO: movimento, MOV: 'P1' },
+    },
   } as never;
 }
 
@@ -120,7 +125,7 @@ describe('SavePreVenda', () => {
     mockCustomFetch.mockResolvedValueOnce({
       status: 400,
       statusText: 'Bad Request',
-      body: null,
+      body: { StatusCode: 400, StatusMessage: 'Bad Request', RecordCount: 0, Data: null },
     } as never);
 
     const res = await SavePreVenda(preVenda());

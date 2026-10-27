@@ -98,21 +98,16 @@ const SuperSearchProducts = ({ data, words, CallBack }: iProps) => {
     {
       key: 'NOME',
       title: 'NOME',
-      width: '25%',
+      width: '29%',
     },
     {
       key: 'FABRICANTE.NOME',
       title: 'FABRICANTE',
-      width: '17%',
+      width: '19%',
     },
     {
       key: 'QTDATUAL',
       title: 'QTD_RJ',
-      width: '6%',
-    },
-    {
-      key: 'DISPONIVEL',
-      title: 'DISP_RJ',
       width: '6%',
       render: (_, item) => String(estoqueDisponivel(item)),
     },

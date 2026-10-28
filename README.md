@@ -1,36 +1,193 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# EMSoft Pedido Web (B2B)
 
-## Getting Started
+Portal B2B da AutoSul/EMSoft para clientes de auto-peças consultarem produtos,
+acompanharem a situação financeira, montarem orçamentos e gerarem pré-vendas
+integradas ao ERP.
 
-First, run the development server:
+Aplicação **Next.js 14 (App Router)** com **Server Actions**, TypeScript e
+Tailwind CSS, consumindo a API do ERP EMSOFT.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+> Documentação funcional completa: **[DOCUMENTACAO.md](./DOCUMENTACAO.md)**
+> (módulos, regras de negócio, endpoints, segurança, testes e limitações).
+
+---
+
+## Funcionalidades
+
+- **Login do cliente** por CNPJ (CIC) + senha, com sessão em cookies.
+- **Dashboard** com banners, boletos em aberto (download de PDF) e pedidos
+  aguardando faturamento.
+- **Produtos**: busca (super busca + fallback SQL), preço por tabela do cliente,
+  promoções, similares, histórico e estoque por filial.
+- **Carrinho/Orçamento**: inclusão, edição e remoção de itens com controle de
+  estoque, múltiplo de venda e preço; exportação em PDF.
+- **Pré-venda**: condições e formas de pagamento, parcelas, entrega/retirada,
+  validação de bloqueios financeiros e gravação no ERP.
+- **Vendas**: listagem e detalhe com itens.
+- **Cliente/Financeiro**: limite, débitos vencidos e a vencer, créditos e saldo
+  para compra.
+- **Liberações**: solicitação e consumo de liberações de bloqueio
+  (`INADIMPLENCIA`, `LIMITE`, `BLOQUEADO`).
+
+---
+
+## Requisitos
+
+- Node.js 20+
+- Acesso à API do ERP EMSOFT (`EMSOFT_API`)
+- Acesso ao compartilhamento de PDFs de boleto (quando usar `PATH_GERARPDF` ou
+  `PDFS_DIR`)
+
+---
+
+## Configuração
+
+Crie o arquivo `.env` na raiz (baseado em [`exemple.env`](./exemple.env)):
+
+```env
+# API do ERP
+EMSOFT_API=http://host:2001/emsoft/emauto
+
+# Credenciais de serviço usadas no login técnico
+VENDA_LOGIN=
+VENDA_PASSWORD=
+
+# Diretório raiz dos PDFs de boleto (fallback quando o ERP não informa o caminho)
+PDFS_DIR=
+
+# Marca os cookies como Secure (produção com HTTPS)
+COOKIE_SECURE=false
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+| Variável | Obrigatória | Descrição |
+|---|---|---|
+| `EMSOFT_API` | sim | URL base da API do ERP |
+| `VENDA_LOGIN` / `VENDA_PASSWORD` | sim | Usuário/senha de serviço para obter o token |
+| `PDFS_DIR` | não | Fallback local para PDFs de boleto |
+| `COOKIE_SECURE` | não | `true` para cookies `Secure` |
+| `ANALYZE` | não | `true` gera o bundle analyzer no build |
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## Como rodar
 
-## Learn More
+```bash
+# instalar dependências
+npm ci
 
-To learn more about Next.js, take a look at the following resources:
+# desenvolvimento (http://localhost:3000)
+npm run dev
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# build de produção
+npm run build
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+# produção (porta 10018)
+npm run start
+```
 
-## Deploy on Vercel
+### Produção com `output: standalone`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+O projeto usa `output: 'standalone'`. Nesse modo o `next start` emite o aviso
+`"next start" does not work with "output: standalone"`. O modo suportado é:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+```bash
+npm run build
+node .next/standalone/server.js
+```
+
+Ou use a imagem Docker:
+
+```bash
+docker build -t pedido-web .
+docker run -p 3000:3000 --env-file .env pedido-web
+```
+
+---
+
+## Scripts
+
+| Script | Descrição |
+|---|---|
+| `npm run dev` | Servidor de desenvolvimento (porta 3000) |
+| `npm run build` | Build de produção |
+| `npm run start` | Inicia em produção na porta 10018 |
+| `npm run test` | Testes unitários (Vitest) |
+| `npm run test:watch` | Vitest em modo watch |
+| `npm run test:e2e` | Testes end-to-end (Playwright) |
+| `npm run test:e2e:ui` | Playwright com UI |
+| `npm run lint` | ESLint |
+| `npm run format` | Formatação com dprint |
+| `npm run analyze` | Build com análise de bundle |
+
+---
+
+## Estrutura
+
+```
+src/
+├── app/
+│   ├── actions/        # Server Actions (integração com o ERP)
+│   ├── api/            # Route Handlers (boletos, downloads, banners)
+│   ├── app/            # Área autenticada (dashboard, produtos, carrinho, ...)
+│   └── auth/           # Login
+├── components/         # Componentes por domínio
+├── hooks/              # Modal / useModal
+├── lib/                # Utilitários, estoque, bloqueios, filtros OData
+├── services/api.ts     # CustomFetch (wrapper de fetch)
+├── store/              # Zustand (orçamento, produto, modal, usuário)
+└── @types/             # Tipagens dos contratos do ERP
+```
+
+### Rotas principais
+
+| Rota | Tela |
+|---|---|
+| `/auth` | Login |
+| `/app/dashboard` | Banners, boletos e pré-vendas aguardando faturamento |
+| `/app/customer/[id]` | Ficha do cliente + financeiro |
+| `/app/products` | Busca de produtos |
+| `/app/products/[id]` | Detalhe do produto + estoque por filial |
+| `/app/cart` | Carrinho/orçamento |
+| `/app/pre-sales` | Pré-vendas |
+| `/app/pre-sales/[id]/view` | Detalhe da pré-venda |
+| `/app/sales` | Vendas |
+| `/app/sales/[id]` | Detalhe da venda |
+| `/api/boletos/[banco]/[cic]/[nossoNumero]` | Download do PDF do boleto |
+| `/api/list-banners` | Lista de banners |
+
+---
+
+## Testes
+
+```bash
+npm run test        # Vitest (unitários)
+npm run test:e2e    # Playwright (requer servidor rodando)
+```
+
+Cobertura atual: login, pré-venda (insert + PATCH `ID_TIPO_VENDA`), regras de
+estoque/preço, super busca com fallback SQL e utilitários.
+
+---
+
+## Regras de negócio em destaque
+
+- Estoque disponível = `QTDATUAL - QTD_GARANTIA`.
+- Quantidade ajustada ao múltiplo (`QTD_VENDA`/`MULTIPLO_COMPRA`) e limitada ao
+  disponível.
+- Preço: promoção → tabela do cliente → preço cadastrado.
+- Bloqueios de cliente: `INADIMPLENCIA`, `LIMITE` e `BLOQUEADO`, com fluxo de
+  liberação no ERP.
+- Pré-venda sempre gravada como B2B (`ID_TIPO_VENDA = 1`, via PATCH após o
+  insert).
+- Boleto lido de `BancoBoleto.PATH_GERARPDF`
+  (`Boleto_<CIC>_<DOC>_<NOSSO_NUMERO>.pdf`), com fallback para `PDFS_DIR`.
+
+---
+
+## Observações
+
+- Em produção no Windows, o Next precisa de acesso ao compartilhamento UNC
+  informado em `PATH_GERARPDF` para servir os PDFs.
+- Alguns componentes legados apontam para rotas inexistentes
+  (`/app/customers`, `/app/budgets`). Detalhes na seção 12 de
+  [DOCUMENTACAO.md](./DOCUMENTACAO.md).
